@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+results_figures/
+data/hf/
+models/
+logs/
+.profiling.lock

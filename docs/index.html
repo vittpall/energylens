@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnergyLens</title>
+<meta name="description" content="EnergyLens: predicting the energy of LLM inference across tensor- and pipeline-parallel layouts, with the measured dataset and an interactive explorer.">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #fcfcfb; --surface: #ffffff; --line: #e4e3df; --grid: #eeede9;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
+  --accent: #2a78d6; --accent-soft: #e5effb; --pick: #eb6834; --el: #6250d6; --dot: #b9b8b3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141413; --surface: #1a1a19; --line: #2f2f2d; --grid: #262624;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+    --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141413; --surface: #1a1a19; --line: #2f2f2d; --grid: #262624;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+  --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1040px; margin: 0 auto; padding: 0 16px 64px; }
+header.hero { text-align: center; padding: 56px 0 24px; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+.subtitle { font-size: 1.15rem; color: var(--text-2); max-width: 760px; margin: 0 auto 16px; }
+.authors { color: var(--muted); margin-bottom: 20px; }
+.links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.links a { text-decoration: none; color: var(--text); border: 1px solid var(--line); background: var(--surface);
+  padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: .95rem; }
+.links a:hover { border-color: var(--accent); }
+section { margin-top: 48px; }
+h2 { font-size: 1.5rem; margin: 0 0 12px; letter-spacing: -0.01em; }
+p { color: var(--text-2); margin: 0 0 12px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.stat b { display: block; font-size: 1.8rem; letter-spacing: -0.02em; color: var(--text); }
+.stat span { color: var(--text-2); font-size: .9rem; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin-bottom: 14px; }
+.filters label { display: flex; flex-direction: column; font-size: .8rem; color: var(--text-2); gap: 4px; min-width: 120px; flex: 1 1 140px; }
+select, input[type=range] { font: inherit; font-size: .95rem; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+.chart-wrap { position: relative; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis text { fill: var(--muted); font-size: 12px; }
+.axis line, .axis path { stroke: var(--line); }
+.gridline { stroke: var(--grid); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; color: var(--text-2); margin: 8px 0 0; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: .82rem; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  display: none; white-space: nowrap; z-index: 2; }
+.picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 14px; }
+.pick { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--bg); }
+.pick .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.pick .v { font-size: 1.15rem; font-weight: 650; color: var(--text); }
+.pick .d { font-size: .85rem; color: var(--text-2); }
+.pick.best { border-color: var(--pick); }
+.pick.el { border-color: var(--el); }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-2); font-weight: 600; cursor: pointer; user-select: none; }
+td { color: var(--text); }
+tr.front td:first-child::before { content: "● "; color: var(--accent); }
+.table-wrap { overflow-x: auto; margin-top: 14px; max-height: 360px; overflow-y: auto; }
+details summary { cursor: pointer; color: var(--text-2); font-weight: 600; margin-top: 14px; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  overflow-x: auto; font-size: .82rem; color: var(--text); }
+.note { font-size: .82rem; color: var(--muted); margin-top: 10px; }
+.theme { position: fixed; top: 12px; right: 12px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .85rem; cursor: pointer; }
+footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: center; }
+</style>
+</head>
+<body>
+<button class="theme" id="theme" aria-label="Toggle dark mode">◐ Theme</button>
+<main>
+<header class="hero">
+  <h1>EnergyLens</h1>
+  <div class="subtitle">Predicting the energy of LLM inference across tensor- and pipeline-parallel layouts,
+    from a few dozen measurements.</div>
+  <div class="authors">Anonymous authors · under review</div>
+  <nav class="links">
+    <a href="#">Paper</a>
+    <a href="https://github.com/">Code</a>
+    <a href="#dataset">Dataset</a>
+    <a href="#explorer">Explorer</a>
+    <a href="#cite">BibTeX</a>
+  </nav>
+</header>
+
+<section>
+  <h2>Abstract</h2>
+  <p>Serving a large model means choosing how to split it across GPUs. The layout (tensor parallelism,
+  pipeline parallelism, how many devices) changes energy by large factors, and neither latency nor rated
+  power tells you which layout uses least. EnergyLens uses symbolic regression to discover a closed-form,
+  parallelism-aware energy template, then fits its twelve parameters to a new model from about fifty
+  measured batches. Across 29 datasets on NVIDIA A100 (dense, mixture-of-experts, state-space and
+  multimodal models) it predicts energy within 8% and ranks layouts correctly in 95% of pairs, and it
+  carries over to Intel GPU Max 1550 once whole-card accounting is included.</p>
+  <div class="stats">
+    <div class="stat"><b>8.0%</b><span>energy MAPE on held-out scenarios (A100, 29 datasets)</span></div>
+    <div class="stat"><b>94.6%</b><span>of layout pairs ordered correctly</span></div>
+    <div class="stat"><b>1.9%</b><span>mean extra energy of the chosen layout over the best</span></div>
+    <div class="stat"><b>96.7%</b><span>pairwise accuracy on Intel GPU Max 1550</span></div>
+  </div>
+</section>
+
+<section id="explorer">
+  <h2>Explore the measurements</h2>
+  <p>Each point is one layout serving the same batch. Points on the blue line are Pareto-optimal: no
+  other layout is both faster and cheaper. Move the latency target to see which layout uses least
+  energy while staying within <i>k</i>× of the fastest, and which one EnergyLens would pick from its
+  50-row fit.</p>
+  <div class="panel">
+    <div class="filters">
+      <label>GPU<select id="f-hw"></select></label>
+      <label>Model<select id="f-model"></select></label>
+      <label>Workload<select id="f-mod"></select></label>
+      <label>Precision<select id="f-prec"></select></label>
+      <label>Output tokens<select id="f-mt"></select></label>
+      <label>Batch size<select id="f-bs"></select></label>
+      <label>Token budget<select id="f-bud"></select></label>
+      <label>Latency target: <span id="k-val">2.0</span>× fastest<input type="range" id="f-k" min="1" max="5" step="0.1" value="2"></label>
+    </div>
+    <div class="chart-wrap" id="chart-wrap">
+      <svg id="chart" viewBox="0 0 960 440" role="img" aria-label="Energy per request against batch latency for every layout"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>Pareto frontier</span>
+      <span><i style="background:var(--dot)"></i>Other layouts</span>
+      <span><i style="background:var(--pick)"></i>Lowest energy within target (measured)</span>
+      <span><i style="background:var(--el)"></i>EnergyLens pick</span>
+    </div>
+    <div class="picks" id="picks"></div>
+    <details open>
+      <summary>All layouts for this batch</summary>
+      <div class="table-wrap"><table id="tbl"></table></div>
+    </details>
+    <p class="note" id="note"></p>
+  </div>
+</section>
+
+<section id="dataset">
+  <h2>Dataset</h2>
+  <p>Every measured batch is released: about 92,000 rows over 18 models, two GPU vendors, four modalities
+  and five weight formats, plus a day of replayed Azure traffic. On NVIDIA, energy comes from the NVML counters
+  read by Zeus; on Intel, from the Level Zero Sysman counters. Rows that fail a validity check are kept and
+  flagged.</p>
+<pre>import pandas as pd
+grid = pd.read_parquet("grid.parquet")          # built by: python data/build_dataset.py
+grid = grid[grid.valid]
+grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_size"]).energy_per_output_token.median()</pre>
+</section>
+
+<section id="cite">
+  <h2>BibTeX</h2>
+<pre>@inproceedings{energylens,
+  title     = {EnergyLens: Interpretable Closed-Form Energy Models for Multimodal LLM Inference Serving},
+  author    = {Anonymous},
+  booktitle = {Under review},
+  year      = {2026}
+}</pre>
+</section>
+
+<footer>Data and code released with the paper.</footer>
+</main>
+
+<script>
+(function () {
+  // theme toggle (per-viewer convenience only)
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  document.getElementById("theme").onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+  };
+
+  const $ = id => document.getElementById(id);
+  const F = { hw: $("f-hw"), model: $("f-model"), mod: $("f-mod"), prec: $("f-prec"),
+              mt: $("f-mt"), bs: $("f-bs"), bud: $("f-bud"), k: $("f-k") };
+  let DATA = [];
+  let sortKey = "E", sortAsc = true;
+
+  function uniq(a) { return [...new Set(a)]; }
+  function fill(sel, values, keep, fmt) {
+    const prev = keep ?? sel.value;
+    sel.innerHTML = values.map(v => `<option value="${v}">${fmt ? fmt(v) : v}</option>`).join("");
+    if (values.map(String).includes(String(prev))) sel.value = prev;
+  }
+  function datasets() { return DATA.filter(d => d.hardware === F.hw.value); }
+
+  function refreshFilters(level) {
+    if (level <= 0) fill(F.hw, uniq(DATA.map(d => d.hardware)));
+    const byHw = datasets();
+    if (level <= 1) fill(F.model, uniq(byHw.map(d => d.model)));
+    const byModel = byHw.filter(d => d.model === F.model.value);
+    if (level <= 2) fill(F.mod, uniq(byModel.map(d => d.modality)));
+    const byMod = byModel.filter(d => d.modality === F.mod.value);
+    if (level <= 3) fill(F.prec, uniq(byMod.map(d => d.precision)));
+    const ds = current();
+    if (!ds) return;
+    const rows = ds.rows;
+    if (level <= 4) fill(F.mt, uniq(rows.map(r => r[0])).sort((a, b) => a - b));
+    const r1 = rows.filter(r => r[0] == F.mt.value);
+    if (level <= 5) fill(F.bs, uniq(r1.map(r => r[1])).sort((a, b) => a - b));
+    const r2 = r1.filter(r => r[1] == F.bs.value);
+    if (level <= 6) fill(F.bud, uniq(r2.map(r => r[4])).sort((a, b) => a - b), undefined,
+                         v => v.toLocaleString());
+  }
+  function current() {
+    return DATA.find(d => d.hardware === F.hw.value && d.model === F.model.value &&
+                          d.modality === F.mod.value && d.precision === F.prec.value);
+  }
+
+  function points() {
+    const ds = current();
+    if (!ds) return [];
+    return ds.rows.filter(r => r[0] == F.mt.value && r[1] == F.bs.value && r[4] == F.bud.value)
+      .map(r => ({ tp: r[2], pp: r[3], n: r[2] * r[3], E: r[5], L: r[6], P: r[7], Ep: r[8],
+                   label: `TP${r[2]} × PP${r[3]}` }));
+  }
+
+  function pareto(pts) {
+    const s = [...pts].sort((a, b) => a.L - b.L || a.E - b.E);
+    const out = []; let best = Infinity;
+    for (const p of s) if (p.E < best) { out.push(p); best = p.E; }
+    return out;
+  }
+
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+    const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(10));
+    return t;
+  }
+  const fmt = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toPrecision(2);
+
+  function render() {
+    $("k-val").textContent = (+F.k.value).toFixed(1);
+    const pts = points();
+    const svg = $("chart");
+    const W = 960, H = 440, m = { l: 64, r: 20, t: 16, b: 48 };
+    if (!pts.length) { svg.innerHTML = ""; $("picks").innerHTML = ""; $("tbl").innerHTML = ""; return; }
+    const front = new Set(pareto(pts));
+    const k = +F.k.value, fastest = Math.min(...pts.map(p => p.L)), target = k * fastest;
+    const feas = pts.filter(p => p.L <= target + 1e-12);
+    const best = feas.reduce((a, b) => (b.E < a.E ? b : a));
+    const hasPred = pts.every(p => p.Ep != null);
+    const elPick = hasPred ? feas.reduce((a, b) => (b.Ep < a.Ep ? b : a)) : null;
+    const fewest = [...feas].sort((a, b) => a.n - b.n || a.pp - b.pp)[0];
+    const fast = pts.find(p => p.L === fastest);
+
+    const xs = pts.map(p => p.L), ys = pts.map(p => p.E);
+    const x0 = 0, x1 = Math.max(...xs, target) * 1.06, y0 = 0, y1 = Math.max(...ys) * 1.1;
+    const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r);
+    const Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+    let g = "";
+    for (const t of niceTicks(y0, y1, 6)) g += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}"/>` +
+      `<text x="${m.l - 8}" y="${Y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+    for (const t of niceTicks(x0, x1, 8)) g += `<text x="${X(t)}" y="${H - m.b + 18}" text-anchor="middle">${fmt(t)}</text>`;
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line)"/>`;
+    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Batch latency (s)</text>`;
+    g += `<text transform="translate(16 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Energy per request (J)</text>`;
+    // latency target band
+    g += `<rect x="${X(target)}" y="${m.t}" width="${Math.max(0, W - m.r - X(target))}" height="${H - m.t - m.b}" fill="var(--grid)" opacity=".7"/>`;
+    g += `<line x1="${X(target)}" x2="${X(target)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+    g += `<text x="${X(target) + 6}" y="${m.t + 14}" fill="var(--muted)" style="font-size:12px">target ${k.toFixed(1)}× fastest</text>`;
+    const fr = pareto(pts);
+    g += `<polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${fr.map(p => `${X(p.L)},${Y(p.E)}`).join(" ")}"/>`;
+    pts.forEach((p, i) => {
+      const c = p === best ? "var(--pick)" : front.has(p) ? "var(--accent)" : "var(--dot)";
+      const r = p === best ? 8 : 6;
+      g += `<circle data-i="${i}" cx="${X(p.L)}" cy="${Y(p.E)}" r="${r}" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`;
+      if (elPick && p === elPick && p !== best)
+        g += `<circle cx="${X(p.L)}" cy="${Y(p.E)}" r="11" fill="none" stroke="var(--el)" stroke-width="2"/>`;
+      if (elPick && p === elPick && p === best)
+        g += `<circle cx="${X(p.L)}" cy="${Y(p.E)}" r="12" fill="none" stroke="var(--el)" stroke-width="2"/>`;
+      if (front.has(p) || p === best)
+        g += `<text x="${X(p.L) + 10}" y="${Y(p.E) - 8}" fill="var(--text-2)" style="font-size:11px">${p.tp}×${p.pp}</text>`;
+    });
+    // hit targets bigger than the marks
+    pts.forEach((p, i) => g += `<circle class="hit" data-i="${i}" cx="${X(p.L)}" cy="${Y(p.E)}" r="14" fill="transparent"/>`);
+    svg.innerHTML = `<g class="axis">${g}</g>`;
+
+    const tip = $("tip"), wrap = $("chart-wrap");
+    svg.querySelectorAll(".hit").forEach(el => {
+      el.addEventListener("mouseenter", () => {
+        const p = pts[+el.dataset.i];
+        tip.innerHTML = `<b>${p.label}</b> · ${p.n} device${p.n > 1 ? "s" : ""}<br>Energy ${fmt(p.E)} J/request` +
+          (p.Ep != null ? ` (EnergyLens ${fmt(p.Ep)})` : "") + `<br>Latency ${fmt(p.L)} s · Power ${fmt(p.P)} W`;
+        tip.style.display = "block";
+        const b = wrap.getBoundingClientRect(), r = el.getBoundingClientRect();
+        let left = r.left - b.left + 18; if (left + tip.offsetWidth > b.width) left = r.left - b.left - tip.offsetWidth - 8;
+        tip.style.left = left + "px"; tip.style.top = Math.max(0, r.top - b.top - 10) + "px";
+      });
+      el.addEventListener("mouseleave", () => tip.style.display = "none");
+    });
+
+    const pct = p => (100 * (p.E / best.E - 1));
+    const card = (cls, k_, p, extra) => `<div class="pick ${cls}"><div class="k">${k_}</div>` +
+      `<div class="v">${p.label}</div><div class="d">${fmt(p.E)} J/request · ${fmt(p.L)} s${extra || ""}</div></div>`;
+    let html = card("best", "Lowest energy within target", best, "");
+    if (elPick) html += card("el", "EnergyLens pick (50-row fit)", elPick,
+      elPick === best ? " · optimal" : ` · +${pct(elPick).toFixed(1)}% energy`);
+    html += card("", "Fewest devices within target", fewest, fewest === best ? " · optimal" : ` · +${pct(fewest).toFixed(1)}% energy`);
+    html += card("", "Fastest layout", fast, fast === best ? " · optimal" : ` · +${pct(fast).toFixed(1)}% energy`);
+    $("picks").innerHTML = html;
+
+    const cols = [["label", "Layout"], ["n", "Devices"], ["L", "Latency (s)"], ["E", "Energy (J/req)"],
+                  ["Ep", "EnergyLens (J/req)"], ["P", "Power (W)"]].filter(c => c[0] !== "Ep" || hasPred);
+    const rows = [...pts].sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey];
+      return (typeof va === "string" ? va.localeCompare(vb) : va - vb) * (sortAsc ? 1 : -1);
+    });
+    $("tbl").innerHTML = `<thead><tr>${cols.map(c => `<th data-k="${c[0]}">${c[1]}${sortKey === c[0] ? (sortAsc ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead>` +
+      `<tbody>${rows.map(p => `<tr class="${front.has(p) ? "front" : ""}">${cols.map(c =>
+        `<td>${typeof p[c[0]] === "number" ? fmt(p[c[0]]) : p[c[0]]}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    $("tbl").querySelectorAll("th").forEach(th => th.onclick = () => {
+      const k2 = th.dataset.k; sortAsc = sortKey === k2 ? !sortAsc : true; sortKey = k2; render();
+    });
+    $("note").textContent = hasPred
+      ? "Means over repeated batches of the same cell. EnergyLens predictions come from one fit on 50 random measured rows of this dataset."
+      : "Means over repeated batches of the same cell. Intel counters read whole cards (two tiles each); predictions are shown for A100 datasets.";
+  }
+
+  const chain = [F.hw, F.model, F.mod, F.prec, F.mt, F.bs, F.bud];
+  chain.forEach((sel, i) => sel.addEventListener("change", () => { refreshFilters(i + 1); render(); }));
+  F.k.addEventListener("input", render);
+
+  fetch("data/site.json").then(r => r.json()).then(j => {
+    DATA = j.datasets;
+    refreshFilters(0);
+    // a default that shows a non-trivial frontier
+    if ([...F.model.options].some(o => o.value === "Qwen2.5-14B")) { F.model.value = "Qwen2.5-14B"; refreshFilters(2); }
+    const pickMid = (sel, lvl) => { const o = [...sel.options]; if (o.length) { sel.value = o[Math.floor(o.length / 2)].value; refreshFilters(lvl); } };
+    pickMid(F.mt, 5); pickMid(F.bs, 6);
+    const bud = [...F.bud.options]; if (bud.length) F.bud.value = bud[bud.length - 1].value;
+    render();
+  }).catch(() => { $("note").textContent = "Could not load data/site.json — build it with: python docs/build_site_data.py"; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+diff --git a/vllm/model_executor/layers/fused_moe/oracle/unquantized.py b/vllm/model_executor/layers/fused_moe/oracle/unquantized.py
+index 9c31da10d..fc7f11184 100644
+--- a/vllm/model_executor/layers/fused_moe/oracle/unquantized.py
++++ b/vllm/model_executor/layers/fused_moe/oracle/unquantized.py
+@@ -252,7 +252,8 @@ def make_unquantized_moe_kernel(
+             inplace=not moe_config.disable_inplace,
+         )
+     elif backend == UnquantizedMoeBackend.XPU:
+-        from vllm.model_executor.layers.fused_moe import XPUExperts
++        # Not via the package: fused_moe/__init__ exports it only when Triton works.
++        from vllm.model_executor.layers.fused_moe.xpu_fused_moe import XPUExperts
+ 
+         kernel = mk.FusedMoEKernel(
+             MoEPrepareAndFinalizeNoDPEPModular(),
+diff --git a/vllm/platforms/xpu.py b/vllm/platforms/xpu.py
+index 5d39dfceb..d40a93a37 100644
+--- a/vllm/platforms/xpu.py
++++ b/vllm/platforms/xpu.py
+@@ -164,7 +164,17 @@ class XPUPlatform(Platform):
+         parallel_config = vllm_config.parallel_config
+         # in V1(or with chunked prefill) block_size is 64
+         if cache_config and not cache_config.user_specified_block_size:
+-            cache_config.block_size = 64
++            # Never shrink a block size a hybrid (attention + Mamba) model already
++            # needed, and redo its Mamba page padding for the final block size:
++            # hybrid sizing runs before this hook, so forcing 64 here left the
++            # attention and Mamba page sizes unable to unify (Nemotron-H).
++            cache_config.block_size = max(64, cache_config.block_size)
++            if model_config is not None and model_config.is_hybrid:
++                from vllm.model_executor.models.config import (
++                    HybridAttentionMambaModelConfig,
++                )
++
++                HybridAttentionMambaModelConfig.verify_and_update_config(vllm_config)
+ 
+         # lazy import to avoid circular import
+         from vllm.config import CUDAGraphMode
