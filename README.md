@@ -2,7 +2,7 @@
 
 Code and data for **EnergyLens: Interpretable Closed-Form Energy Models for Multimodal LLM Inference Serving**.
 
-**Project page with the interactive explorer:** https://anonymous.4open.science/w/energylens-AEB4/
+[![Project page](https://img.shields.io/badge/Project%20page-interactive%20explorer-2a78d6?style=for-the-badge)](https://anonymous.4open.science/w/energylens-AEB4/)
 
 ![EnergyLens pipeline: profile, discover the template once, calibrate twelve coefficients per model, select the layout](docs/assets/framework.png)
 

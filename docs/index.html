@@ -122,6 +122,7 @@ figcaption { color: #52514e; font-size: .88rem; margin-top: 8px; }
 .ds input { margin: 0; }
 input[type=search] { font: inherit; font-size: .95rem; color: var(--text); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; }
+.legend svg.sw, table svg.sw { display: inline-block; width: .8em; height: .8em; vertical-align: -0.05em; margin-right: 6px; }
 footer { border-top: 1px solid var(--line); padding-top: 20px; }
 
 footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: center; }
@@ -491,7 +492,7 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
     });
 
     // legend
-    const sw = (c, shape) => `<svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:-2px;margin-right:6px">${marker(shape, 7, 7, 5, c)}</svg>`;
+    const sw = (c, shape) => `<svg class="sw" viewBox="0 0 14 14">${marker(shape, 7, 7, 5, c)}</svg>`;
     $("legend").innerHTML = single
       ? `<span>${sw("var(--accent)", "circle")}Pareto frontier</span><span>${sw("var(--dot)", "circle")}Other layouts</span>` +
         `<span>${sw("var(--pick)", "circle")}Lowest energy within target (measured)</span><span><i style="border:2px solid var(--el);background:transparent"></i>EnergyLens pick</span>`
