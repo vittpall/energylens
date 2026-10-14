@@ -130,7 +130,7 @@ Alternatively, use the D-optimal design in `adaptive_sampling/strategies.py` to 
 
 - `index.html`: the page, including the interactive explorer;
 - `assets/`: the figures;
-- `data/site.json`: the explorer's data, regenerated with `python docs/build_site_data.py` after the data changes.
+- `data/site.json` and `data/site.js`: the explorer's data (the same content; the page loads the `.js`), regenerated with `python docs/build_site_data.py` after the data changes.
 
 ## License
 

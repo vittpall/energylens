@@ -78,7 +78,9 @@ def main():
     path = os.path.join(ROOT, "docs", "data", "site.json")
     with open(path, "w") as f:
         json.dump(meta, f, separators=(",", ":"))
-    print(f"{len(out)} datasets -> {path} ({os.path.getsize(path) / 1e6:.1f} MB)")
+    with open(path, "rb") as f, open(path[:-5] + ".js", "w") as g:   # same data as a script, for hosts
+        g.write("window.SITE_DATA = " + f.read().decode() + ";\n")     # that do not serve JSON to fetch()
+    print(f"{len(out)} datasets -> {path} ({os.path.getsize(path) / 1e6:.1f} MB) and site.js")
 
 
 if __name__ == "__main__":

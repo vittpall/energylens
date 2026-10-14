@@ -468,7 +468,18 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
   chain.forEach((sel, i) => sel.addEventListener("change", () => { refreshFilters(i + 1); syncDs(); render(); }));
   F.k.addEventListener("input", render);
 
-  fetch("data/site.json").then(r => r.json()).then(j => {
+  // Resolve data/ against the page's folder: hosts that serve the page without a trailing
+  // slash (e.g. .../energylens) would otherwise look one folder up.
+  const base = /\/$|\.html?$/.test(location.pathname) ? "" : location.pathname.split("/").pop() + "/";
+  const loadScript = () => new Promise((ok, fail) => {
+    if (window.SITE_DATA) return ok(window.SITE_DATA);
+    const el = document.createElement("script");
+    el.src = base + "data/site.js";
+    el.onload = () => (window.SITE_DATA ? ok(window.SITE_DATA) : fail());
+    el.onerror = fail;
+    document.head.appendChild(el);
+  });
+  loadScript().catch(() => fetch(base + "data/site.json").then(r => r.json())).then(j => {
     DATA = j.datasets;
     $("f-ds").innerHTML = DATA.map((d, i) => `<option value="${i}">${dsLabel(d)}</option>`).join("");
     refreshFilters(0);
@@ -479,7 +490,7 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
     const bud = [...F.bud.options]; if (bud.length) F.bud.value = bud[bud.length - 1].value;
     syncDs();
     render();
-  }).catch(() => { $("note").textContent = "Could not load data/site.json — build it with: python docs/build_site_data.py"; });
+  }).catch(() => { $("note").textContent = "Could not load the explorer data (data/site.js)."; });
 })();
 </script>
 </body>
