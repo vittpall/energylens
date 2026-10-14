@@ -214,6 +214,7 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
   50-row fit.</p>
   <div class="panel">
     <div class="filters">
+      <label style="flex-basis:100%">Dataset<select id="f-ds"></select></label>
       <label>GPU<select id="f-hw"></select></label>
       <label>Model<select id="f-model"></select></label>
       <label>Workload<select id="f-mod"></select></label>
@@ -452,18 +453,31 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
       : "Means over repeated batches of the same cell. Intel counters read whole cards (two tiles each); predictions are shown for A100 datasets.";
   }
 
+  // one menu with every dataset; it drives the filters below and follows them
+  const dsLabel = d => `${d.hardware} · ${d.model} · ${d.modality} · ${d.precision}`;
+  function syncDs() { const d = current(); if (d) $("f-ds").value = String(DATA.indexOf(d)); }
+  $("f-ds").addEventListener("change", () => {
+    const d = DATA[+$("f-ds").value];
+    F.hw.value = d.hardware; refreshFilters(1);
+    F.model.value = d.model; refreshFilters(2);
+    F.mod.value = d.modality; refreshFilters(3);
+    F.prec.value = d.precision; refreshFilters(4);
+    render();
+  });
   const chain = [F.hw, F.model, F.mod, F.prec, F.mt, F.bs, F.bud];
-  chain.forEach((sel, i) => sel.addEventListener("change", () => { refreshFilters(i + 1); render(); }));
+  chain.forEach((sel, i) => sel.addEventListener("change", () => { refreshFilters(i + 1); syncDs(); render(); }));
   F.k.addEventListener("input", render);
 
   fetch("data/site.json").then(r => r.json()).then(j => {
     DATA = j.datasets;
+    $("f-ds").innerHTML = DATA.map((d, i) => `<option value="${i}">${dsLabel(d)}</option>`).join("");
     refreshFilters(0);
     // a default that shows a non-trivial frontier
     if ([...F.model.options].some(o => o.value === "Qwen2.5-14B")) { F.model.value = "Qwen2.5-14B"; refreshFilters(2); }
     const pickMid = (sel, lvl) => { const o = [...sel.options]; if (o.length) { sel.value = o[Math.floor(o.length / 2)].value; refreshFilters(lvl); } };
     pickMid(F.mt, 5); pickMid(F.bs, 6);
     const bud = [...F.bud.options]; if (bud.length) F.bud.value = bud[bud.length - 1].value;
+    syncDs();
     render();
   }).catch(() => { $("note").textContent = "Could not load data/site.json — build it with: python docs/build_site_data.py"; });
 })();
