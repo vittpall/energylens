@@ -1,9 +1,4 @@
-"""Shared look of the paper figures: fonts, axis styling, and per-family line styles.
-
-A model's colour identifies the model; its marker and line style identify its
-architecture family, so curves of different families stay distinguishable in
-greyscale and when colours are close.
-"""
+"""Shared look of the paper figures: fonts, axis styling, and per-family line styles."""
 import os
 
 import matplotlib

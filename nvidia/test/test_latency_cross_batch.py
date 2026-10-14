@@ -1,28 +1,8 @@
 #!/usr/bin/env python3
-"""
-Tests D, E & F: EnergyLens vs MaverIQ
-=====================================
+"""Tests D, E & F: EnergyLens vs MaverIQ
 
-TEST D — Latency vs Energy Optimum Divergence:
-  For each scenario, identify the latency-optimal and energy-optimal (TP,PP)
-  config. Report how often they diverge, and the energy penalty of using the
-  latency-optimal config. This directly challenges MaverIQ's core assumption
-  that optimising latency also optimises energy.
-
-TEST E — Cross-Batch-Size Extrapolation:
-  Train on small batch sizes (BS ≤ threshold), predict on large batch sizes.
-  EnergyLens uses BS^β (sublinear), while MaverIQ uses linear BS scaling
-  (Eq. 6 in their paper: L(BS) = L(1) + (BS-1)×O_BS). Tests which
-  functional form extrapolates better to unseen batch sizes.
-
-TEST F — Output-Length Extrapolation:
-  Same, on max_tokens: train on the short limits, predict the long ones.
-  MaverIQ profiles output lengths 10 and 20 only and extrapolates
-  TTFT + out x TPOT (their latency_estimator.py).
-
-Usage:
-  python test_compare_maverIQ.py
-  python test_compare_maverIQ.py --output-dir more_tests_results
+    python test_compare_maverIQ.py
+    python test_compare_maverIQ.py --output-dir more_tests_results
 """
 
 DATASETS = {

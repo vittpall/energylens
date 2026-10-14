@@ -1,38 +1,10 @@
 #!/usr/bin/env python3
-"""
-Pairwise Ranking Evaluation for Energy Config Selection
-=========================================================
+"""Pairwise Ranking Evaluation for Energy Config Selection
 
-Instead of "did you pick THE single best config?" (winner-take-all),
-this script evaluates: "given two configs, did you correctly predict
-which one uses less energy?"
-
-With 9 (TP,PP) configs per scenario, each scenario yields C(9,2)=36
-pairwise comparisons instead of 1 binary outcome. This provides a much
-more stable and informative signal for evaluating config selection quality.
-
-Metrics computed:
-  1. Pairwise ranking accuracy: fraction of pairs ranked correctly
-  2. Spearman rank correlation per scenario: how well does the predicted
-     ranking match the true ranking across configs?
-  3. Top-1 selection accuracy: did the model pick the actual best config?
-  4. Top-1 regret: energy overhead when using the model's #1 pick
-  5. Fair held-out evaluation (default): all models (EnergyLens, MaverIQ, Gradient Boosting) are fit on the SAME rows
-     from a random subset of scenarios, then scored only on the held-out
-     scenarios neither saw while fitting. Split is by scenario (not row)
-     because there is ~1 row per (scenario,config) cell. Use --test-frac 0
-     to reproduce the old in-sample numbers.
-  6. With --loco: leave-one-configuration-out. Each model is refit on all
-     configs but one and used to rank the held-out (TP,PP) config it never
-     saw. This is the test that converts row-savings (fewer profiling rows)
-     into reload-savings (skipping an entire config's profiling): a config
-     that stays correctly ranked while held out never needs to be profiled.
-
-Usage:
-  python pairwise_ranking_eval.py
-  python pairwise_ranking_eval.py --output-dir ranking_results
-  python pairwise_ranking_eval.py --unified-n 50
-  python pairwise_ranking_eval.py --loco        # add leave-one-config-out rows
+    python pairwise_ranking_eval.py
+    python pairwise_ranking_eval.py --output-dir ranking_results
+    python pairwise_ranking_eval.py --unified-n 50
+    python pairwise_ranking_eval.py --loco        # add leave-one-config-out rows
 """
 
 # ════════════════════════════════════════════════════════════

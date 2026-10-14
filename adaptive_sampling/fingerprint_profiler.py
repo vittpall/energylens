@@ -1,23 +1,6 @@
 """Profile MaverIQ fingerprints (the model truncated to a few layers) on real GPUs.
 
-MaverIQ never runs the full model while profiling: for a reference layout with
-PP stages it measures fingerprints of PP and PP+1 layers at two output lengths
-and two batch sizes, and extrapolates per-layer TTFT/TPOT to the full layer
-count (their tools/estimator/latency_estimator.py). This runs that protocol in
-our setup: the same 3 reference layouts, middle token budget, shortest/longest
-max_tokens and smallest/largest batch as profiling_cost.reference_rows, but on
-fingerprints built by make_fingerprint.py. Requests ignore EOS so every one
-decodes exactly max_tokens (a truncated model's EOS is meaningless; MaverIQ fixes
-the output length the same way). Each row is measured --repeats times (MaverIQ's
-run.py averages 10 iterations after 2 warm-ups): the per-layer extrapolation
-multiplies the 1-vs-2-layer difference by ~the layer count, so single noisy
-sub-second measurements extrapolate to nonsense, even negative latencies.
-
-Output: fingerprint_results/<model>/profiling_metrics.csv (profiler format; its
-num_layers column is the fingerprint's layer count) and engines.json (engine
-start-up seconds per (TP, PP, layers), charged as profiling cost).
-
-    python fingerprint_profiler.py --model Qwen/Qwen2.5-14B-Instruct \\
+    python fingerprint_profiler.py --model Qwen/Qwen2.5-14B-Instruct \
         --reference ../nvidia/results_zeus/run_text_only_Qwen2.5-14B-Instruct_fp16/res_native/profiling_metrics.csv
 """
 import os

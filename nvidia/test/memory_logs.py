@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """Collect vLLM engine memory figures from the profiling job logs.
 
-vLLM logs, for every engine it starts, the weights loaded on the first worker
-(first pipeline stage, TP rank 0), that worker's memory left for the KV cache,
-the engine's KV cache size in tokens, and whether start-up finished. This turns
-the PBS logs into one row per engine start:
-
-    model, quantization, tp, pp, budget (max_num_batched_tokens), max_seq_len,
-    weights_gib, kv_avail_gib, kv_tokens, graph_gib, ok, error
-
     python test/memory_logs.py                 # -> results_figures/memory/engines.csv
 """
 import glob

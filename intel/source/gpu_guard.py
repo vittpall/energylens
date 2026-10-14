@@ -1,26 +1,4 @@
-"""Detect other jobs running on this job's GPUs.
-
-On a shared PBS GPU queue each job only sees the GPUs PBS gave it, but PBS has
-handed the SAME physical GPUs to two jobs that started seconds apart (jobs
-two jobs were both given the same GPUs on one node). Their vLLM
-engines then fought over memory, and any energy measured while another job's
-work runs on the same GPUs is contaminated: Zeus reads the whole GPU's energy
-counter, not just our process's share.
-
-Choosing GPUs by index cannot prevent this (inside every job the GPUs are
-numbered 0..n-1 whatever their physical identity), so instead the profiler
-asks NVML which processes are on its GPUs and refuses to measure while any of
-them belongs to someone else. A process is ours if it descends from this
-process (vLLM's engine core and its TP/PP workers are children/grandchildren
-of the profiler) or if its environment carries our PBS_JOBID (covers a worker
-orphaned by a crashed engine). Anything else — another job of the same user,
-or another user's process whose environment we cannot read — is foreign.
-
-The environment check alone is not enough: in job 187945 vLLM's pipeline
-workers (Worker_PP0/PP1 of a TP=1 PP=2 engine) were not recognised by it and
-the guard stopped the job on its own engine. The process-tree check does not
-depend on what the workers' environment contains.
-"""
+"""Detect other jobs running on this job's GPUs."""
 
 import os
 import time

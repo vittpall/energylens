@@ -1,21 +1,7 @@
 #!/usr/bin/env python3
 """EnergyLens on Intel Data Center GPU Max 1550 (Aurora), against the A100 results.
 
-Aurora exposes each GPU as two tiles; vLLM places one TP/PP rank per tile, and the
-Level Zero energy counter is per card (both tiles), so a layout of n tiles is charged
-for ceil(n / 2) cards. The layouts include PP = 3 and 6, absent on the A100s.
-
-  1. accuracy  50-row fits, scored on held-out scenarios (3 seeds): EnergyLens,
-               MaverIQ (direct energy form) and Gradient Boosting
-  2. LOCO      each layout predicted by a fit on all the other layouts
-  3. optimum   latency- vs energy-optimal layout per scenario
-  4. transfer  the A100 fit of the same model applied on Aurora: as is, rescaled
-               on k Aurora rows, or refitted from it with a prior (k = 5, 10, 25),
-               against a fit from scratch on the same k rows
-  5. exponents the fitted TP/PP exponents on both machines
-
     python test/aurora_eval.py
-Writes results_figures/aurora/*.csv.
 """
 import os
 import sys

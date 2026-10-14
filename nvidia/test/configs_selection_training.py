@@ -1,39 +1,6 @@
 #!/usr/bin/env python3
-"""
-DoE Sampling Comparison: Random vs Latin Hypercube vs GPU-aware LHS
-plus additional strategies:
-  4. Sobol              — quasi-random low-discrepancy Sobol sequence
-  5. Halton             — quasi-random Halton sequence
-  6. Orthogonal         — orthogonal array sampling (OA-LHS)
-  7. Stratified         — proportional stratified random sampling by (tp,pp) group
-  8. Cluster-based      — k-means clustering of the feature space, one sample per cluster
-  9. MaxMin-Distance    — greedy maximin distance (space-filling) sampling
- 10. Energy-Distance    — greedy max-energy-distance (deterministic space-filling)
-=====================================================================
-Mirrors the structure of compare_cross_model.py / seed_variance.py but
-replaces uniform random draws with structured sampling strategies.
+"""DoE Sampling Comparison: Random vs Latin Hypercube vs GPU-aware LHS
 
-  1. Random          — baseline (same as seed_variance.py)
-  2. LHS             — Latin Hypercube Sampling over the 5 continuous factors
-  3. GPU-aware LHS   — LHS constrained to valid (tp, pp) combinations for a
-                       given GPU count, so tp × pp <= n_gpus
-  4. Sobol           — Sobol sequence (scrambled), mapped to nearest data rows
-  5. Halton          — Halton low-discrepancy sequence
-  6. OA-LHS          — Orthogonal-array-based LHS (scipy.stats.qmc.LatinHypercube
-                       with strength=2, approximating an orthogonal array)
-  7. Stratified      — Stratified random: proportional allocation across
-                       (tp,pp) groups, uniform random within each group
-  8. Cluster         — k-means clustering in normalised feature space;
-                       one random sample drawn from each cluster
-  9. MaxMin          — Greedy maximin-distance sampling: iteratively pick the
-                       point that maximises the minimum distance to already-
-                       selected points
- 10. EnergyDist      — Greedy max-sum-of-distances (energy-distance criterion):
-                       iteratively pick the point that maximises the sum of
-                       Euclidean distances to already-selected points
-
-Usage
------
     python doe_sampling_comparison.py                          # all datasets, default seeds
     python doe_sampling_comparison.py --n-gpus 8              # force 8-GPU budget
     python doe_sampling_comparison.py --n-train 50 100 500
@@ -41,11 +8,6 @@ Usage
     python doe_sampling_comparison.py --output-dir doe_out
     python doe_sampling_comparison.py --datasets "Mistral-7B (NVIDIA A100)"
     python doe_sampling_comparison.py --strategies random lhs sobol stratified
-
-Dependencies
-------------
-    pip install numpy pandas scipy scikit-learn matplotlib
-    # scipy.stats.qmc (LHS/Sobol/Halton) requires scipy >= 1.7
 """
 
 import argparse, os, sys, warnings

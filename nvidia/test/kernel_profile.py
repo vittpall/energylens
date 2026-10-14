@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """Where the GPU time goes for FP16, bitsandbytes NF4 and AWQ 4-bit (decode-heavy batch).
 
-Each variant runs in its own process (one engine at a time on GPU 0): a warm-up batch,
-then one profiled batch of 16 requests with ~70-token prompts and 256 forced output
-tokens, through vLLM's torch profiler (engine option profiler_config). The CUDA kernels of
-the trace are summed and grouped: GEMM, dequantization, attention, other.
-
     python test/kernel_profile.py [--out results_figures/kernel_profile]
 """
 import argparse

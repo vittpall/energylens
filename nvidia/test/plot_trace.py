@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Figure: held-out MAPE on real Azure request batches, per model and method.
-
-Left panel: models fit on n grid rows only (own y-scale). Right panel: the same rows plus k
-real batches (balanced). The last two groups of each panel are fitted on the grid
-profiled with long prompts (--input-lengths 128-4096) instead of the standard one. Reads trace_eval.py summaries.
+"""Figure: held-out MAPE on real Azure request batches, per model and method.
 
     python test/plot_trace.py            # -> results_figures/trace_mape.{png,pdf}
 """

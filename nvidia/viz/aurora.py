@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """Figures for the Aurora (Intel Data Center GPU Max 1550) runs.
 
-  aurora_characterization  latency, energy per request and power per TP/PP layout on
-                           Aurora, and the Aurora / A100 energy ratio on shared layouts
-  aurora_accuracy          50-row accuracy per method, and the A100 -> Aurora transfer
-                           (needs test/aurora_eval.py to have run)
-
     python viz/aurora.py [--out results_figures/aurora]
 """
 import argparse

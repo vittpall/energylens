@@ -1,18 +1,4 @@
-"""
-Shared --datasets handling for the test scripts.
-
-Every script accepts the same forms, so one dataset list (e.g. in testing.pbs)
-can be passed to all of them:
-
-    Label=path/to/profiling_metrics.csv   explicit label (used in plots/CSVs)
-    path/to/profiling_metrics.csv         label derived from the run directory
-    path/to/run_dir                       folder holding <pattern> (default
-                                          profiling_metrics.csv)
-    <registry key>                        a name from the script's own DATASETS
-
-With no --datasets, each script keeps its own default (its DATASETS dict, or
-auto-discovery for the ranking scripts).
-"""
+"""Shared --datasets handling for the test scripts."""
 
 import os
 

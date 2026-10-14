@@ -1,10 +1,4 @@
-"""Offline profiling simulator over complete Zeus grids.
-
-A dataset's rows are split into held-out test scenarios and a candidate pool.
-A strategy only sees the energy of pool rows it has measured, and every
-measurement is charged like the real profiler: an engine reload whenever the
-(TP, PP, token budget) changes, plus the batch's measured latency.
-"""
+"""Offline profiling simulator over complete Zeus grids."""
 import os
 import sys
 

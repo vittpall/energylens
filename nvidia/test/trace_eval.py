@@ -1,25 +1,8 @@
 #!/usr/bin/env python3
-"""
-Predict energy of real Azure request batches from the profiling grid.
+"""Predict energy of real Azure request batches from the profiling grid.
 
-The trace run (main_profiler.py --trace) measures the same batches on every
-(TP, PP) layout, so each batch is a scenario. Its batches are split in half per
-seed: a calibration half and a test half. Every model is scored on the test half
-only, trained on:
-  grid                   n rows sampled from the grid profile (n=0: all rows)
-  grid + k trace rows    the same n rows plus k rows from the calibration half
-  ... (balanced)         the same, with the k trace rows repeated so they weigh
-                         as much as the grid rows in the fit (--balance)
-  trace only             every calibration row (in-distribution reference)
-Metrics: MAPE, and per batch the pairwise ranking accuracy, Top-1 and regret of
-the chosen layout ("fewest GPUs, then TP", the no-model rule, only with
---with-rule). SLO: per batch, the lowest-energy layout whose latency is at most
-k x the batch's fastest layout, with feasibility known (measured latency) or
-predicted (fit_latency, fit on the same training rows); a predicted pick that
-misses the limit is a violation (selection_baselines.evaluate_slo).
-
-    python test/trace_eval.py \\
-        --grid ./results_zeus/run_text_only_Mistral-7B-Instruct-v0.3_fp16/res_native/profiling_metrics.csv \\
+    python test/trace_eval.py \
+        --grid ./results_zeus/run_text_only_Mistral-7B-Instruct-v0.3_fp16/res_native/profiling_metrics.csv \
         --trace ./results_zeus_trace/run_trace_Mistral-7B-Instruct-v0.3_fp16/profiling_metrics.csv
 """
 import argparse, os, sys, warnings
@@ -30,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pairwise_ranking import (prepare_df, fit_unified, unified_predict, fit_maveriq,
                               maveriq_energy, fit_gb, fit_latency, compute_pairwise_metrics,
                               _SKLEARN)
-from selection_baselines import evaluate_slo
+from online_eval import evaluate_slo
 from compare_cross_model import drop_invalid_rows
 
 RULE = 'fewest GPUs, then TP'

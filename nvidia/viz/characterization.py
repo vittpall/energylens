@@ -3,17 +3,6 @@
 
     python viz/characterization.py --out ../../PDP-paper/images/characterization   # from nvidia/
     python viz/characterization.py --only tp_pp batch                               # a subset
-
-  tp_pp_vs_latency_avg / tp_pp_vs_energy_avg   every text-only model vs (TP, PP)
-  energy_latency_optimum                        extra energy of the latency-optimal choice, per dataset
-  batch_size_vs_energy                          (a) all models vs batch size, (b) one model per (TP, PP)
-  modality_energy                               text vs image vs video, per (TP, PP)
-  fits (CSV only)                               MaverIQ's latency form and EnergyLens' TP/PP terms
-                                                fitted to the same data (numbers for Sec. V.B.2)
-
-Each figure also writes a CSV of the plotted values next to it, which is where
-the numbers quoted in the text come from. Colour = model, marker and line style
-= architecture family (viz/style.py); datasets come from viz/datasets.py.
 """
 import argparse
 import os

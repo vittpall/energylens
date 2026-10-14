@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Script to analyze and visualize the distribution of parameters in the profiling metrics dataset.
-"""
+"""Script to analyze and visualize the distribution of parameters in the profiling metrics dataset."""
 
 import pandas as pd
 import matplotlib.pyplot as plt

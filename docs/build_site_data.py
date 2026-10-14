@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """Export the compact JSON the project page reads (docs/data/site.json).
 
-For every dataset: the valid rows averaged per cell (output length, batch size, TP, PP,
-token budget), with energy per request, batch latency and power. A100 datasets also
-carry EnergyLens's prediction for every cell, from Eq. (1) fitted on 50 random
-measured rows (seed 42), the paper's default profiling budget.
-
     python docs/build_site_data.py
 """
 import json

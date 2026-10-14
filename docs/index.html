@@ -79,43 +79,131 @@ details summary { cursor: pointer; color: var(--text-2); font-weight: 600; margi
 pre { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
   overflow-x: auto; font-size: .82rem; color: var(--text); }
 .note { font-size: .82rem; color: var(--muted); margin-top: 10px; }
-.theme { position: fixed; top: 12px; right: 12px; border: 1px solid var(--line); background: var(--surface);
-  color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .85rem; cursor: pointer; }
+
+nav.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+nav.top .inner { max-width: 1040px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto;
+  align-items: center; }
+nav.top a { color: var(--text-2); text-decoration: none; padding: 12px 10px; font-size: .9rem; white-space: nowrap;
+  border-bottom: 2px solid transparent; }
+nav.top a.active, nav.top a:hover { color: var(--text); border-bottom-color: var(--accent); }
+nav.top .spacer { flex: 1; }
+nav.top button { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px;
+  padding: 5px 12px; font: inherit; font-size: .82rem; cursor: pointer; white-space: nowrap; }
+.affil { color: var(--muted); font-size: .9rem; margin: -12px 0 14px; }
+.badge { display: inline-block; background: var(--accent-soft); color: var(--text); border-radius: 999px;
+  padding: 4px 12px; font-size: .88rem; margin-bottom: 18px; }
+section { scroll-margin-top: 56px; }
+h3 { font-size: 1.1rem; margin: 20px 0 8px; }
+ul.points { color: var(--text-2); padding-left: 20px; margin: 0 0 12px; }
+ul.points li { margin: 4px 0; }
+.takeaway { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 6px;
+  padding: 10px 14px; margin: 14px 0; color: var(--text); }
+figure { margin: 18px 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+figure img { width: 100%; height: auto; display: block; }
+figcaption { color: #52514e; font-size: .88rem; margin-top: 8px; }
+.bib-wrap { position: relative; }
+.copy { position: absolute; top: 10px; right: 10px; border: 1px solid var(--line); background: var(--bg);
+  color: var(--text); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
+.to-top { position: fixed; right: 16px; bottom: 16px; width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; display: none;
+  font-size: 1.1rem; z-index: 6; }
+footer { border-top: 1px solid var(--line); padding-top: 20px; }
+
 footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: center; }
 </style>
 </head>
 <body>
-<button class="theme" id="theme" aria-label="Toggle dark mode">◐ Theme</button>
+<nav class="top" id="nav"><div class="inner">
+  <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#method">Method</a>
+  <a href="#results">Results</a><a href="#explorer">Explorer</a><a href="#dataset">Dataset</a>
+  <a href="#conclusion">Conclusion</a><a href="#bibtex">BibTeX</a>
+  <span class="spacer"></span><button id="theme" aria-label="Toggle dark mode">◐ Dark mode</button>
+</div></nav>
 <main>
 <header class="hero">
   <h1>EnergyLens</h1>
-  <div class="subtitle">Predicting the energy of LLM inference across tensor- and pipeline-parallel layouts,
-    from a few dozen measurements.</div>
-  <div class="authors">Anonymous authors · under review</div>
+  <div class="subtitle">Interpretable Closed-Form Energy Models for Multimodal LLM Inference Serving</div>
+  <div class="authors">Anonymous authors</div>
+  <div class="affil">Affiliations withheld for double-blind review</div>
+  <div class="badge">📌 Under review</div>
   <nav class="links">
-    <a href="#">Paper</a>
-    <a href="https://github.com/">Code</a>
-    <a href="#dataset">Dataset</a>
-    <a href="#explorer">Explorer</a>
-    <a href="#cite">BibTeX</a>
+    <a href="#">📄 Paper</a>
+    <a href="#">💻 Code</a>
+    <a href="#dataset">📊 Dataset</a>
+    <a href="#explorer">🔎 Explorer</a>
+    <a href="#bibtex">📜 BibTeX</a>
   </nav>
 </header>
 
-<section>
+<section id="abstract">
   <h2>Abstract</h2>
-  <p>Serving a large model means choosing how to split it across GPUs. The layout (tensor parallelism,
-  pipeline parallelism, how many devices) changes energy by large factors, and neither latency nor rated
-  power tells you which layout uses least. EnergyLens uses symbolic regression to discover a closed-form,
-  parallelism-aware energy template, then fits its twelve parameters to a new model from about fifty
-  measured batches. Across 29 datasets on NVIDIA A100 (dense, mixture-of-experts, state-space and
-  multimodal models) it predicts energy within 8% and ranks layouts correctly in 95% of pairs, and it
-  carries over to Intel GPU Max 1550 once whole-card accounting is included.</p>
+  <p>As large language models span dense, mixture-of-experts, and state-space architectures, execute on
+  heterogeneous accelerators, and support multimodal workloads, optimizing inference energy becomes as important
+  as optimizing latency and throughput. Existing methods either treat latency as an energy proxy or depend on
+  data-hungry black-box surrogates. Both break down across parallelism strategies: once energy is charged to every
+  GPU a configuration occupies, the latency- and energy-optimal configurations differ in 85.8% of our scenarios,
+  and black-box models need hundreds of samples to become accurate.</p>
+  <p>We present EnergyLens, which uses symbolic regression to discover a reusable, parallelism-aware structural
+  template for LLM inference energy; after this one-time discovery, the template is calibrated to a new model and
+  workload by fitting twelve coefficients.</p>
+  <p>Across 29 datasets on NVIDIA A100, spanning text, image and video inputs, EnergyLens reaches 8.0% held-out
+  MAPE from 50 measurements (Gradient Boosting: 26.7%) and selects configurations with 1.9% mean energy regret
+  (MaverIQ: 4.2%). Its ranking survives withholding an entire parallelism configuration (90.2% pairwise accuracy,
+  vs. 52.3% for Gradient Boosting). On real Azure inference traffic, 25 production batches suffice to bring its
+  error to 4–10% on five models, where the baselines remain near 30%.</p>
+</section>
+
+<section id="introduction">
+  <h2>Introduction</h2>
+  <p>Serving a model across several GPUs means choosing a layout: how many devices, and how to split the model
+  between tensor parallelism (TP) and pipeline parallelism (PP). The choice changes energy by large factors, and
+  the usual shortcuts pick the wrong layout.</p>
+  <ul class="points">
+    <li>Latency is not a proxy for energy: the fastest layout and the lowest-energy layout differ in 86% of
+      scenarios on A100, at 34.5% extra energy.</li>
+    <li>Rated power is not a proxy either: on Intel GPU Max 1550, measured power is within 9% of the A100's,
+      yet energy per token is 2.4–2.7× higher.</li>
+    <li>Black-box surrogates need hundreds of measurements per model, and each one costs an engine reload.</li>
+  </ul>
+</section>
+
+<section id="method">
+  <h2>Method</h2>
+  <p>Symbolic regression over the profiling data discovers the structure of the energy formula once. Energy splits
+  into a prefill and a decode term, each scaling with tokens over a sublinear function of batch size and with a
+  separate exponent for TP and for PP, plus a fixed cost per device. For a new model, the twelve coefficients are
+  fitted from about fifty measured batches, and the fitted formula ranks every layout.</p>
+  <figure><img src="assets/framework.png" alt="EnergyLens framework: profiling, symbolic-regression discovery of the template, per-model calibration, layout selection" loading="lazy">
+    <figcaption>EnergyLens pipeline: profile, discover the template once, calibrate twelve coefficients per model, select the layout.</figcaption></figure>
+  <h3>Measurement</h3>
+  <ul class="points">
+    <li>NVIDIA: Zeus reads the NVML energy counter of every GPU the engine uses, around each batch.</li>
+    <li>Intel: the Level Zero Sysman energy counters, read over the same window.</li>
+    <li>A configuration is charged for all the devices it occupies.</li>
+  </ul>
+</section>
+
+<section id="results">
+  <h2>Results</h2>
   <div class="stats">
     <div class="stat"><b>8.0%</b><span>energy MAPE on held-out scenarios (A100, 29 datasets)</span></div>
     <div class="stat"><b>94.6%</b><span>of layout pairs ordered correctly</span></div>
     <div class="stat"><b>1.9%</b><span>mean extra energy of the chosen layout over the best</span></div>
     <div class="stat"><b>96.7%</b><span>pairwise accuracy on Intel GPU Max 1550</span></div>
   </div>
+  <div class="takeaway"><b>Takeaway:</b> twelve coefficients fitted on 50 rows predict energy within 8.0%,
+    3× better than the best baseline.</div>
+  <figure><img src="assets/tp_pp_energy.png" alt="Energy per output token against TP and PP layout for each model" loading="lazy">
+    <figcaption>Energy against layout on A100: more devices rarely pay for themselves in energy.</figcaption></figure>
+  <figure><img src="assets/power.png" alt="Power by input type, multi-GPU power against TDP, and the latency–energy Pareto front" loading="lazy">
+    <figcaption>Power by input type, multi-GPU power against TDP, and the latency–energy Pareto front.</figcaption></figure>
+  <figure><img src="assets/aurora_vs_a100.png" alt="Intel GPU Max 1550 against A100 on the same models: energy, latency and power" loading="lazy">
+    <figcaption>Intel GPU Max 1550 against A100 on the same models.</figcaption></figure>
+  <figure><img src="assets/profiling_cost.png" alt="Accuracy against profiling cost for EnergyLens, MaverIQ and Gradient Boosting" loading="lazy">
+    <figcaption>Accuracy against profiling cost.</figcaption></figure>
+  <div class="takeaway"><b>Takeaway:</b> adapting the configuration to the day's load saves 16% energy; the hard
+    part is predicting which configurations meet the latency target.</div>
 </section>
 
 <section id="explorer">
@@ -156,28 +244,36 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
 
 <section id="dataset">
   <h2>Dataset</h2>
-  <p>Every measured batch is released: about 92,000 rows over 18 models, two GPU vendors, four modalities
-  and five weight formats, plus a day of replayed Azure traffic. On NVIDIA, energy comes from the NVML counters
-  read by Zeus; on Intel, from the Level Zero Sysman counters. Rows that fail a validity check are kept and
-  flagged.</p>
+  <p>Every measured batch is released: about 92,000 rows over 18 models, two GPU vendors, four modalities and
+  five weight formats, plus a day of replayed Azure traffic. Rows that fail a validity check are kept and flagged.</p>
 <pre>import pandas as pd
-grid = pd.read_parquet("grid.parquet")          # built by: python data/build_dataset.py
+grid = pd.read_parquet("grid.parquet")      # python data/build_dataset.py
 grid = grid[grid.valid]
 grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_size"]).energy_per_output_token.median()</pre>
 </section>
 
-<section id="cite">
+<section id="conclusion">
+  <h2>Conclusion</h2>
+  <p>A structure discovered once by symbolic regression, then calibrated with twelve coefficients, predicts LLM
+  inference energy across parallelism layouts, model families, modalities, precisions and GPU vendors from about
+  fifty measurements, and picks layouts within a few percent of the optimum where latency- and power-based
+  shortcuts do not.</p>
+</section>
+
+<section id="bibtex">
   <h2>BibTeX</h2>
-<pre>@inproceedings{energylens,
+  <div class="bib-wrap"><button class="copy" id="copy">📋 Copy</button>
+<pre id="bib">@inproceedings{energylens,
   title     = {EnergyLens: Interpretable Closed-Form Energy Models for Multimodal LLM Inference Serving},
   author    = {Anonymous},
   booktitle = {Under review},
   year      = {2026}
-}</pre>
+}</pre></div>
 </section>
 
-<footer>Data and code released with the paper.</footer>
+<footer>Code: Apache-2.0 · Data: CC BY 4.0</footer>
 </main>
+<button class="to-top" id="to-top" aria-label="Back to top">⬆</button>
 
 <script>
 (function () {
@@ -192,6 +288,23 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
   };
 
   const $ = id => document.getElementById(id);
+  // section highlight in the nav, back-to-top button, BibTeX copy
+  const links = [...document.querySelectorAll("nav.top a")];
+  const secs = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  const onScroll = () => {
+    let cur = secs[0];
+    for (const sec of secs) if (sec.getBoundingClientRect().top < 90) cur = sec;
+    links.forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + cur.id));
+    $("to-top").style.display = scrollY > 600 ? "block" : "none";
+  };
+  addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  $("to-top").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
+  $("copy").onclick = () => {
+    navigator.clipboard.writeText($("bib").textContent).then(() => {
+      $("copy").textContent = "✓ Copied"; setTimeout(() => $("copy").textContent = "📋 Copy", 1500);
+    }).catch(() => {});
+  };
+
   const F = { hw: $("f-hw"), model: $("f-model"), mod: $("f-mod"), prec: $("f-prec"),
               mt: $("f-mt"), bs: $("f-bs"), bud: $("f-bud"), k: $("f-k") };
   let DATA = [];

@@ -1,58 +1,6 @@
 #!/usr/bin/env python3
-"""
-Action-Gap Analysis — why high MAPE still yields optimal config selection
-=========================================================================
-`ranking_vs_mape.py` shows *empirically* that a large absolute error does not
-imply a wrong optimal-configuration choice. This script states and validates
-the *reason*, borrowing the action-gap argument from decision-theoretic RL.
+"""Action-Gap Analysis — why high MAPE still yields optimal config selection
 
-FORMALISATION
--------------
-Within one deployment scenario, config selection is a one-step decision problem
-over the candidate set A (the (TP,PP) configs). Let
-
-    t(a)  true energy of config a
-    p(a)  EnergyLens prediction
-    e(a)  = p(a) - t(a)                 per-config prediction error
-
-Because argmin_a p(a) is invariant to adding a constant to p, a systematic bias
-in the fit CANNOT change the selection. The decision-relevant error is therefore
-the *centred* (bias-removed) error span
-
-    eps_c = max_a | e(a) - mean_a e |          (decision-relevant error)
-
-and NOT the MAPE, which is dominated by exactly the bias term that cancels.
-Let a1, a2 be the true best and second-best configs and
-
-    Delta = t(a2) - t(a1)                      (action gap)
-
-THEOREM (selection certificate).  If 2*eps_c < Delta then argmin p = argmin t,
-i.e. the selection is provably optimal and the regret is exactly 0.
-    Proof: for any a != a1,
-        p(a) - p(a1) = [t(a) - t(a1)] + [e(a) - e(a1)] >= Delta - 2*eps_c > 0,
-    since the centring constant cancels in the difference e(a) - e(a1). QED
-
-COROLLARY (regret bound).  For any prediction, regret(s) = t(argmin p) - t(a1)
-is at most 2*eps_c, regardless of how large the MAPE is.
-
-The two results predict a testable claim about the existing profiling data:
-
-    regret is governed by the DECISION RATIO  rho = 2*eps_c / Delta,
-    not by MAPE. Scenarios with rho < 1 must show zero regret; scenarios that
-    lose are the near-tie ones (small Delta), not the high-MAPE ones.
-
-WHAT THIS SCRIPT PRODUCES
--------------------------
-  1. Per-scenario table of (MAPE, eps_c, Delta, rho, regret, certificate).
-  2. Certificate validation: the empirical violation rate among scenarios with
-     rho < 1 (the theorem says it must be 0.0%).
-  3. Bound tightness: measured regret vs the 2*eps_c bound.
-  4. A head-to-head discriminative comparison — ROC AUC of MAPE vs rho for
-     predicting a wrong pick — quantifying that rho carries the signal and
-     MAPE does not.
-  5. A 6-panel figure contrasting the MAPE view against the action-gap view.
-
-Usage:
     python action_gap.py
     python action_gap.py --n-train 50 --seeds 0 1 2
     python action_gap.py --datasets "Mistral-7B (NVIDIA A100)"

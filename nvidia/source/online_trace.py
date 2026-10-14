@@ -1,21 +1,4 @@
-"""Online replay of Azure traces: requests arrive over time into a running engine.
-
-The trace mode (trace_workload.py) runs each batch of real requests offline, all
-at once. Here the same requests (real input/output lengths, from the Azure LLM
-inference traces) are sent at their trace arrival times, scaled by a rate factor
-like MaverIQ's trace generator (rate 0.1 = a tenth of the trace's requests per
-second), into one engine that keeps running: vLLM's continuous batching admits
-each request when it arrives, so batches form, grow and shrink on their own, and
-the GPUs idle between requests. Energy is measured with Zeus over the whole
-window, from the first arrival until the last request finishes, so it includes
-that idle time.
-
-One window = `window_s` seconds of arrivals from a random offset of one trace at
-one rate. Each (TP, PP) layout replays the same windows, so a window is a
-scenario. Per window a CSV row (energy, duration, load), and per request its
-send, first-token and finish times (requests.jsonl), from which the in-flight
-count over time can be rebuilt. Each layout also gets an idle-power reading.
-"""
+"""Online replay of Azure traces: requests arrive over time into a running engine."""
 import csv
 import gc
 import json

@@ -1,16 +1,8 @@
     #!/usr/bin/env python3
-"""
-TEST C — No-Power Degradation: EnergyLens vs MaverIQ
-=====================================================
+"""No-Power Degradation: EnergyLens vs MaverIQ
 
-MaverIQ uses latency × measured_power. In deployment, you don't have
-per-config power measurements before profiling. This test replaces measured
-power with a constant (mean power) and measures how MaverIQ degrades.
-EnergyLens doesn't use power at all — it predicts energy directly.
-
-Usage:
-  python final_test.py
-  python final_test.py --output-dir results
+    python final_test.py
+    python final_test.py --output-dir results
 """
 
 DATASETS = {

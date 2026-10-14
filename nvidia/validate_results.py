@@ -1,37 +1,9 @@
 #!/usr/bin/env python3
 """Validate profiling datasets before they are used or published.
 
-Modelled on the ML.ENERGY Benchmark's scripts/validate_results.py (per-run expectations
-with error/warning severity, an `is_stable` flag and reason in their published data), but
-for our data: one row per measured batch, so checks are per row plus per dataset.
-
-Row checks (error = row is not valid; warning = valid but noteworthy):
-  missing_measurement   error  latency/power/energy empty (failed generation)
-  zero_energy           error  energy <= 0 (window shorter than the energy counter's update)
-  gpu_count             error  n_gpus_measured != TP x PP (energy charged to the wrong GPUs)
-  power_source          error  not 'zeus_sampling' (device-0 fallback undercounts multi-GPU)
-  power_range           error  power per GPU outside [MIN_W, TDP x 1.1]
-  energy_power_mismatch error  energy x batch differs from power x latency by > MISMATCH
-                               (energy is the GPU counter, power the sampled mean: they must agree)
-  token_count           error  generated tokens > batch x max_tokens, or longest output > max_tokens
-  energy_outlier        warn   |robust z| of log energy > OUTLIER_Z among rows with the same
-                               layout, budget, max_tokens and batch size
-  short_window          warn   latency < SHORT_S: the energy counter's update interval and the
-                               100 ms power sampling are coarse (most mismatches are such rows;
-                               ML.ENERGY requires >= 30 s windows for the same reason)
-  early_stop            warn   longest output < max_tokens (decode length != limit; handled by
-                               decode_tokens when max_generated_tokens is recorded)
-  waves                 info   batch_size > max_num_seqs (served in waves; expected, not printed)
-Dataset checks: layout coverage (rows per layout and budget vs the best-covered layout),
-configurations the profiler recorded as failed or skipped, scenarios with a single layout
-(unusable for ranking), duplicate rows, share of valid rows.
-
     python validate_results.py                          # every results_zeus*/ dataset
     python validate_results.py --paths results_zeus/run_text_only_Mistral-7B-Instruct-v0.3_fp16
     python validate_results.py --verbose                # per-check counts for every dataset
-
-Writes results_validation/<dataset>.flags.csv (row index, is_valid, reasons; same order as
-the dataset CSV) and results_validation/summary.csv.
 """
 import argparse
 import glob

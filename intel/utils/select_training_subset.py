@@ -1,22 +1,9 @@
 #!/usr/bin/env python3
-"""
-Script to select a training subset with good coverage/span of specified features.
-This helps improve symbolic regression by ensuring diverse feature combinations.
+"""Script to select a training subset with good coverage/span of specified features.
 
-Supports averaging multiple identical samples per configuration before selection.
-
-Usage:
     python select_training_subset.py --input <csv_file> --features <feat1,feat2,...> [options]
-
-Example:
-    python select_training_subset.py --input results_internVL3-9B/profiling_metrics.csv \
-        --features tensor_parallel_size,pipeline_parallel_size,max_tokens \
-        --output train_subset.csv --size 0.7 --method stratified
-    
-    # Average 10 samples per config before selection:
-    python select_training_subset.py --input results_internVL3-9B/profiling_metrics.csv \
-        --features tensor_parallel_size,pipeline_parallel_size \
-        --aggregate --output train_subset.csv
+    python select_training_subset.py --input results_internVL3-9B/profiling_metrics.csv         --features tensor_parallel_size,pipeline_parallel_size,max_tokens         --output train_subset.csv --size 0.7 --method stratified
+    python select_training_subset.py --input results_internVL3-9B/profiling_metrics.csv         --features tensor_parallel_size,pipeline_parallel_size         --aggregate --output train_subset.csv
 """
 
 import argparse

@@ -1,28 +1,6 @@
 #!/usr/bin/env python3
-"""
-Ranking vs. MAPE — selection robustness under high absolute error
-==================================================================
-Reviewer asks for a concrete example showing that a high MAPE does NOT
-necessarily imply a wrong optimal-configuration choice. EnergyLens is used as a
-*selection oracle*: what matters operationally is whether argmin_pred over the
-candidate configs equals argmin_true, not the absolute Joule error.
+"""Ranking vs. MAPE — selection robustness under high absolute error
 
-This script, per dataset:
-  1. holds out a fraction of the scenarios (--test-frac, default 0.3), fits
-     EnergyLens on a small n_train sample drawn from the remaining scenarios
-     and predicts on the held-out ones only (never on its training rows),
-  2. groups rows into deployment scenarios (fixed max_tokens, batch_size),
-  3. for each scenario aggregates per (TP, PP) config and computes
-       - scenario MAPE (absolute-error metric),
-       - pairwise ranking accuracy + Spearman (ranking metric),
-       - Top-1 correctness (did we pick the true-optimal config?),
-       - regret % (energy penalty of the selected vs the true-optimal config),
-  4. surfaces a CONCRETE EXAMPLE: the highest-MAPE scenario that still selects
-     the true-optimal config (regret 0%), printed as a full per-config table,
-  5. aggregates Top-1 selection accuracy within MAPE buckets and plots it,
-     demonstrating selection stays high even where MAPE is large.
-
-Usage:
     python ranking_vs_mape.py
     python ranking_vs_mape.py --n-train 50 --seed 0
     python ranking_vs_mape.py --datasets "Mistral-7B (NVIDIA A100)"

@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
-"""
-Check our MaverIQ reimplementation against the authors' code on their released data.
-
-Data: MaverIQ/outputs/profiling_data/full_model_data_collection.csv (RTX A6000,
-TensorRT-LLM, batch size 1, balanced pipeline mapping, output lengths 10..200).
-Per (model, precision) every (TP, PP, output length) row is predicted by:
-
-  authors (full-model)   their closed form: TTFT/TPOT from output lengths 10 and
-                         20 of the reference layouts, TP/PP overheads solved from
-                         L(1,1), L(1,2), L(2,1) (or their per-model fallbacks), and
-                         their published exponents (latency_exponents.csv)
-  ours, reference rows   our latency model (pairwise_ranking.fit_maveriq) fitted on
-                         the same reference layouts at output lengths 10 and 20
-  ours, half the rows    our latency model fitted on a random half of the rows,
-                         scored on the other half (five seeds)
-
-Reports the median and mean absolute percentage error of latency (the paper's
-Fig. 9 reports the median).
+"""Check our MaverIQ reimplementation against the authors' code on their released data.
 
     python test/maveriq_reproduction.py --maveriq ~/MaverIQ
 """

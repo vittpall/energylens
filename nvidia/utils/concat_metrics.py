@@ -1,17 +1,6 @@
-"""
-Concatenate profiling_metrics.csv files found under a results folder.
+"""Concatenate profiling_metrics.csv files found under a results folder.
 
-For each immediate subfolder of the root:
-  - Recursively collect all profiling_metrics.csv files
-  - Tag each row with a 'run' column (relative path of the CSV's parent dir)
-  - Concatenate and write <subfolder>/combined_metrics.csv
-
-Also writes a global <root>/combined_metrics.csv across all subfolders.
-
-Usage:
     python concat_metrics.py [results_dir]
-
-Default results_dir: ./results
 """
 
 import sys

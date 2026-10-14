@@ -1,28 +1,9 @@
 #!/usr/bin/env python3
 """Predict the energy of online-replay windows from offline profiling.
 
-An online window (source/online_trace.py) is a stream of real Azure requests
-arriving into a running engine. Every model here is fitted offline only, on the
-grid profile and/or the offline trace batches of the same model, and predicts a
-window's energy as
-
-    E = sum_r e(b, in_r, out_r)  +  P_idle * D * max(0, 1 - b)
-
-where e(b, in, out) is the model's energy per request in a batch of b requests
-with those lengths (the quantity every grid row measures), b the window's mean
-number of requests in flight, D its duration and P_idle the layout's idle power
-(a hardware constant, read once per layout). When b >= 1 the GPUs are never idle;
-when b < 1 they are busy about a fraction b of the time. The load b is either
-  measured   the window's mean in-flight count (isolates the energy model), or
-  predicted  Little's law, b = lambda * L(b), with L the batch latency model fitted
-             on the same offline rows and lambda the window's arrival rate; then
-             D = arrival span + L(b). Nothing measured online is used.
-Scored on window energy (MAPE) and, per window, on the ranking of layouts by
-energy (pairwise, Top-1, regret), against the rule "fewest GPUs, then TP".
-
-    python test/online_eval.py \\
-        --online results_zeus_online/run_online_Llama-3.1-8B-Instruct_fp16 \\
-        --grid results_zeus_inlen/run_text_only_Llama-3.1-8B-Instruct_fp16/in_all/profiling_metrics.csv \\
+    python test/online_eval.py \
+        --online results_zeus_online/run_online_Llama-3.1-8B-Instruct_fp16 \
+        --grid results_zeus_inlen/run_text_only_Llama-3.1-8B-Instruct_fp16/in_all/profiling_metrics.csv \
         --trace results_zeus_trace/run_trace_Llama-3.1-8B-Instruct_fp16/profiling_metrics.csv
 """
 import argparse
@@ -39,10 +20,45 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pairwise_ranking import (prepare_df, fit_unified, unified_predict, fit_maveriq,  # noqa: E402
                               fit_gb, fit_latency, _SKLEARN)
 from compare_cross_model import drop_invalid_rows  # noqa: E402
-from selection_baselines import evaluate_slo  # noqa: E402
 
 MAX_SEQS = 64
 
+
+
+KNOWN, PREDICTED = 'SLO, known feasibility', 'SLO, predicted feasibility'
+
+
+def fewest_gpus(x):
+    return x.sort_values(['gpus', 'pp_degree']).index[0]
+
+
+def evaluate_slo(agg, methods, ks, keys=('max_tokens', 'batch_size'), with_rule=False):
+    """Lowest energy under a latency limit (k x the fastest configuration), with known or
+    predicted feasibility. agg: one row per (scenario, config) with lat (measured), plat
+    (predicted), gpus, measured_energy and p_<method> energy predictions."""
+    out = []
+    for _, x in agg.groupby(list(keys)):
+        if len(x) < 2:
+            continue
+        for k in ks:
+            slo = k * x.lat.min()
+            best = x.measured_energy[x.lat <= slo].min()
+            binds = float(x.lat[x.measured_energy.idxmin()] > slo)
+            for mode in (KNOWN, PREDICTED):
+                lat = x.lat if mode == KNOWN else x.plat
+                ok = lat <= slo
+                c = x[ok] if ok.any() else x.loc[[lat.idxmin()]]
+                picks = {m: (c[f'p_{m}'].idxmin() if c[f'p_{m}'].notna().any() else lat.idxmin()) for m in methods}
+                if with_rule:
+                    picks['fewest GPUs, then TP'] = fewest_gpus(c)
+                picks['fastest'] = lat.idxmin()
+                for m, i in picks.items():
+                    viol = bool(x.lat[i] > slo)
+                    e = x.measured_energy[i]
+                    out.append({'setting': mode, 'k': k, 'method': m, 'top1': float(not viol and e == best),
+                                'regret': np.nan if viol else (e - best) / best * 100,
+                                'violation': float(viol), 'binds': binds})
+    return out
 
 def load_offline(path):
     raw = pd.read_csv(path)

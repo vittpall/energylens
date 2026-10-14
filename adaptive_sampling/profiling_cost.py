@@ -1,35 +1,5 @@
 """Profiling cost vs accuracy: EnergyLens, MaverIQ (paper protocol), Gradient Boosting, brute force.
 
-Every method is charged like the real profiler (simulator.Simulator): one engine
-reload per (TP, PP, budget) visited plus each batch's latency; GPU-hours weight
-both by the engine's GPU count. Accuracy is energy MAPE and configuration
-regret on the simulator's held-out scenarios.
-
-  brute force           every row of the grid (AlpaServe/DynamoLLM-style lookup)
-  EnergyLens random n   n random rows
-  EnergyLens D-opt      doptimal_cost, 50 rows
-  Gradient Boosting     50 random rows
-  MaverIQ (12 rows)     the authors' closed form (MaverIQ Sec. 5.3/5.5, their
-                        tools/estimator): 3 cheapest reference layouts x 2 output
-                        lengths x 2 batch sizes; per layout, latency is linear in
-                        output length (TTFT + out x TPOT) and in batch size (Eq. 6);
-                        with alpha..delta fixed, base latency and TP/PP overheads
-                        solve a 3x3 linear system (Eq. 2/3), clamped at 0. Exponents:
-                        the authors' published fp16 values, or fitted their way
-                        (MAPE) on the other models. Energy = latency x per-GPU power
-                        of the reference rows x GPUs / batch size
-  EnergyLens same rows  EnergyLens fitted on MaverIQ's 12 rows (identical cost)
-  MaverIQ fingerprint   the protocol MaverIQ actually uses (Sec. 5.4): the same
-                        reference rows measured on the model truncated to PP and
-                        PP+1 layers (fingerprint_profiler.py) and extrapolated per
-                        layer to the full model, then the same closed form. Power
-                        is either what the fingerprints draw ("fingerprint power")
-                        or extrapolated per layer like latency ("per-layer energy").
-                        Charged with the fingerprints' own latencies and start-ups.
-                        Only for models with fingerprint_results/<model>/.
-
-latency_mape is the closed form's latency error alone (MaverIQ rows only).
-
     python profiling_cost.py        # -> results/profiling_cost.csv, profiling_cost.png
 """
 import os

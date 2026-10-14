@@ -1,9 +1,5 @@
 """Pre-download the COCO images the text_image profiling run uses.
 
-The dataset (phiyodr/coco2017) holds only URLs and profiling.py fetched them at run
-time, which fails on Aurora's offline compute nodes. Run this on a login node; the
-images land in IMAGE_CACHE_DIR as <file name> and profiling._get_image reads them first.
-
     python download_images.py            # validation[:500], the text_image default
     python download_images.py --n 1000
 """

@@ -1,20 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end layout selection on live-replayed Azure traffic (Test 1).
-
-Every layout replays the same windows (source/online_trace.py), so each window has a
-measured energy and p90 request latency per layout, and a selection policy can be scored
-exactly: it picks one layout per window and is charged that layout's measured energy and
-latency. Latency target per window: p90 within k x the fastest layout's p90.
-
-Policies
-  oracle                  lowest measured energy among layouts meeting the target
-  EnergyLens / MaverIQ / GB, two variants:
-    measured feasibility  told which layouts meet the target, rank them by predicted energy
-    predicted feasibility target checked with the method's own latency prediction
-  fewest GPUs, then TP    no model; with measured feasibility: first compliant layout
-  fastest                 lowest measured p90 (always compliant)
-Reported per k: energy over all windows relative to the oracle, share of windows
-meeting the target, and the same split by arrival rate.
+"""End-to-end layout selection on live-replayed Azure traffic.
 
     python test/policy_eval.py results_figures/online_run_online_*  [--train grid --load predicted]
 """

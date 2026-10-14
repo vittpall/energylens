@@ -1,26 +1,6 @@
 #!/usr/bin/env python3
 """Predict vLLM memory per configuration, and which configurations fit.
 
-Before predicting energy one must know which (TP, PP, token budget) engines start
-at all, and how many tokens of KV cache they get (which caps the requests that run
-at once). MaverIQ estimates memory from three reference layouts per model,
-    M(TP, PP) = M(1,1) + (TP-1) A + TP (PP-1) A'           (memory_estimator.py)
-fitted on measured total memory. vLLM instead reserves a fixed share of every GPU
-(gpu_memory_utilization = 0.9) and fills what the weights and the activation peak
-leave with KV cache, so what decides feasibility is the busiest GPU's weights and
-its KV capacity. We compare three predictors of those, scored against the engine
-starts in the profiling logs (test/memory_logs.py):
-
-  file-based      weights per GPU from the checkpoint's tensor shapes (safetensors
-                  headers), split over pipeline stages like vLLM (get_pp_indices)
-                  and divided by TP; activation/runtime overhead from a 3-term
-                  linear model fitted on the OTHER models (leave-one-model-out), so
-                  the target model is never run.
-  MaverIQ-form    the 3-reference form above on weights and on non-KV memory per
-                  model, fitted on its (1,1), (1,2), (2,1) engines at the same budget;
-                  undefined when (1,1) does not fit (MaverIQ then uses fingerprints).
-  naive           parameters x 2 bytes / (TP x PP), no overhead.
-
     python test/memory_feasibility.py      # -> results_figures/memory/
 """
 import glob

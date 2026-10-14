@@ -1,15 +1,4 @@
-"""Sampling strategies for choosing which pool rows to profile.
-
-A strategy is a generator: it yields a round of pool indices, the simulator
-measures them, and the next round can use everything measured so far.
-
-Adaptive strategies combine a scorer with a selection mode:
-  scorers  doptimal     information gain on EnergyLens's 12 parameters (D-optimal)
-           uncertainty  disagreement of bootstrap refits on the row's energy
-           decision     how contested the best configuration of the row's scenario is
-  modes    rows         best K rows anywhere
-           cost         best engine by score per second (reload + batch time), then K rows on it
-"""
+"""Sampling strategies for choosing which pool rows to profile."""
 import numpy as np
 import pandas as pd
 

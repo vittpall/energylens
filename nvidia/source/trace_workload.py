@@ -1,12 +1,4 @@
-"""Profile batches of real Azure requests (input/output lengths from the trace).
-
-Each batch is `bs` consecutive arrivals from a trace, with bs drawn log-uniformly
-in [1, max_bs]. Prompts are real text tokens cut to each request's input length;
-outputs are forced to the trace's GeneratedTokens (ignore_eos), so decode length
-is exact. Every (TP, PP) layout runs the same batches, so a batch is a scenario.
-Prefix caching is off: random prompt offsets already avoid shared prefixes, and
-this keeps prefill fully measured.
-"""
+"""Profile batches of real Azure requests (input/output lengths from the trace)."""
 import csv
 import gc
 import json

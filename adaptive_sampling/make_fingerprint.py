@@ -1,15 +1,5 @@
 """Build MaverIQ-style fingerprints: the model truncated to its first n decoder layers.
 
-Same idea as MaverIQ's tools/profiling/fingerprint_generator.py (keep layers
-0..n-1, set the layer count in the config), but done tensor by tensor from the
-safetensors shards so no full model is loaded and any architecture whose layers
-are named "...layers.<i>." works. Config entries with one value per layer (lists
-or pattern strings such as layer_types, hybrid_override_pattern) are cut to n.
-Writes <out>/<model>-<n>layer/ with a single model.safetensors, the rewritten
-config and every other file of the snapshot (tokenizer, chat template, code),
-except params.json (Mistral's native config, which keeps
-the full layer count), plus fingerprint.json with the original layer count and the build time.
-
     python make_fingerprint.py --model Qwen/Qwen2.5-14B-Instruct --layers 1 2 3
 """
 import argparse

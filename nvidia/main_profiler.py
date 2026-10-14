@@ -1,28 +1,11 @@
 """Entry point for the profiling pipeline with multi-modal support.
 
-The model, modality and sweep are chosen on the command line, so several jobs
-can be queued at once without editing this file between submissions (a queued
-PBS job reads this file only when it starts, so editing it would change every
-job still waiting in the queue). model.pbs lists one line per model to profile.
-
     python main_profiler.py --model tiiuae/falcon-mamba-7b
     python main_profiler.py --model Qwen/Qwen2-VL-7B-Instruct --modality text_image
     python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --quantization bitsandbytes
     python main_profiler.py --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tp 1 2 4 8 --pp 1 2 4 8
     python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --input-lengths 128 512 2048 4096
-    python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 \
-        --trace ../data/azure_traces/AzureLLMInferenceTrace_conv.csv ../data/azure_traces/AzureLLMInferenceTrace_code.csv
-
-With no arguments it profiles Mistral-Small-24B text-only in fp16, the
-configuration this file had hard-coded before the flags existed.
-
-Output goes to ./results_zeus/run_<modality>_<model>_<fp16|bnb4bit>/<res_tag>/
-(--trace: ./results_zeus_trace/run_trace_<model>_<fp16|bnb4bit>/, see
-source/trace_workload.py; --input-lengths: ./results_zeus_inlen/.../in<L>/, merged
-into .../in_all/profiling_metrics.csv).
-Only one job may write a given output folder at a time: profiling.py appends
-to the CSV and keeps a resume file there, so a second job on the same model
-would interleave rows. A lock file enforces this (see _acquire_output_lock).
+    python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --trace ../data/azure_traces/AzureLLMInferenceTrace_conv.csv ../data/azure_traces/AzureLLMInferenceTrace_code.csv
 """
 import os
 

@@ -1,17 +1,7 @@
 """Compare every live run with random 50-row samples drawn from the same reference grid.
 
-Random draws are scored exactly like live runs (fit on the sample, test on every
-reference scenario it did not touch) and timed with the costs measured live:
-median engine load + 10 s cleanup per engine, recorded batch latency, and the
-same one-time cold start.
-
     python compare_live.py                    # writes live_results/comparison.csv
     python compare_live.py --decode measured  # -> live_results/comparison_measured.csv
-
---decode measured fits and tests with each batch's measured longest output
-(max_generated_tokens) instead of the max_tokens limit, for models whose
-reference grid was re-profiled with that column (results_zeus_maxgen/, used in
-place of results_zeus/); other models fall back to the limit.
 """
 import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")

@@ -1,10 +1,4 @@
-"""The Zeus-measured datasets the paper figures draw from.
-
-One entry per profiling run: the model, its architecture family (sets the
-marker/line style), its modality, and the CSV, relative to nvidia/. A dataset
-whose CSV is missing (a run still in progress) is skipped with a note, so the
-figures can be regenerated as runs finish without editing this file.
-"""
+"""The Zeus-measured datasets the paper figures draw from."""
 import os
 import sys
 from dataclasses import dataclass

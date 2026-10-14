@@ -1,23 +1,7 @@
 #!/usr/bin/env python3
 """Robustness to a change of data distribution, and transfer across models.
 
-A. Distribution shift (same model, same layouts, different requests)
-   A1  modality: fit on 50 rows of one input type (text, image, video, video-only) of
-       Qwen2-VL-7B or LLaVA-1.5-7B, predict every row of another. Reference: the same
-       50-row fit scored on held-out scenarios of the target itself.
-   A2  real traffic: fit on the Azure conversation batches, predict the code batches
-       (and the reverse), per model. Reference: fit and test on the same trace.
-B. Cross-model transfer (leave one model out, text datasets)
-   The exponents and shape of Eq. (unified-tp-pp) are fitted on every OTHER model; the
-   new model contributes k measured rows (k = 5..50), drawn like the 50-row fits of the
-   paper. Methods: from scratch (Eq. fitted on the k rows), `scale` (the other models'
-   median parameters times one factor fitted on the k rows), `refit` (the median
-   parameters as start and as a quadratic prior on the shape exponents, scale and
-   per-device overheads free; lambda = 0.1, 1, 10 reported, none picked on the test
-   rows) and Gradient Boosting from scratch.
-
     python test/shift_transfer.py [--part A|B|all] [--seeds 42 7 123]
-Writes results_figures/shift_transfer/*.csv and prints the summaries.
 """
 import argparse
 import os

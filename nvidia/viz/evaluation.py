@@ -2,13 +2,6 @@
 """Evaluation figures of the paper (Sec. V.C) drawn from test-script outputs.
 
     python viz/evaluation.py no_power test_results/test_c_no_power.csv --out <dir>   # from nvidia/
-
-  no_power   pairwise ranking without per-configuration power: EnergyLens vs MaverIQ with
-             mean power (CSV from test/test_mean_power_accuracy.py)
-
-Other evaluation figures are written by the test scripts themselves (learning curves:
-test/compare_cross_model.py; trace MAPE: test/plot_trace.py; profiling cost:
-adaptive_sampling/profiling_cost.py).
 """
 import argparse
 

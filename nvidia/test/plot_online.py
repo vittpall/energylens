@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Figure: live serving of the Azure traces (source/online_trace.py).
-
-Left two panels: energy per request against the arrival rate (fraction of the
-trace's own rate), one line per (TP, PP) layout, conversation trace, for
-Llama-3.1-8B and Qwen2.5-14B. Right panel: Qwen2.5-14B at the trace's own rate, each
-layout's energy per request against its p90 request latency (the SLO trade-off).
-Colour = GPU count, line style = how the GPUs are split (TP solid, PP dashed,
-TP x PP dash-dot), so the layouts never differ by colour alone.
+"""Figure: live serving of the Azure traces (source/online_trace.py).
 
     python test/plot_online.py            # -> results_figures/online_serving.{png,pdf}
 """

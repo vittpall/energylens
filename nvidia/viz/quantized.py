@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """Quantized checkpoints against FP16 on A100.
 
-  (a, b) energy per output token versus (TP, PP) layout, one line per precision,
-         averaged over the grid cells every precision of that model measured
-  (c)    MMLU (5-shot) versus energy per output token, one point per checkpoint
-         (drawn once results_figures/mmlu/ holds the lm-eval results)
-
     python viz/quantized.py [--out results_figures/quantized]
 """
 import argparse

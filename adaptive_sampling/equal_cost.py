@@ -1,27 +1,6 @@
 #!/usr/bin/env python3
 """Equal-cost comparison of profiling designs, scored where the layout choice is not trivial.
 
-Methods (each charged like the real profiler: one engine load per configuration plus
-the latency of every measured batch):
-  MaverIQ (12 rows)          the authors' protocol (profiling_cost.reference_rows):
-                             3 cheapest layouts x 2 output lengths x 2 batch sizes,
-                             exponents fitted on the other models
-  EnergyLens, MaverIQ rows   EnergyLens on those same 12 rows
-  EnergyLens, random n       n random rows                         (n = 12, 25, 50)
-  EnergyLens, random configs n rows grouped by configuration: random configurations,
-                             K=5 random rows on each (the control for D-optimal: it
-                             saves the same engine loads without the D-optimal criterion)
-  EnergyLens, D-optimal n    doptimal_cost (Appendix, Eq. dopt-cost)
-
-Scores on the held-out scenarios:
-  all             MAPE, pairwise, Top-1, regret over every feasible layout
-  fixed GPUs      ranking among the layouts with the same GPU count (fewest-GPUs rule
-                  cannot decide); regret per (scenario, GPU count)
-  SLO k           lowest-energy layout whose batch latency is within k x the
-                  scenario's fastest (feasibility known): regret against that optimum
-                  and how often the fewest-GPU layout breaks the target
-Datasets: every A100 dataset of the simulator (29), grouped as in the paper.
-
     python equal_cost.py [--seeds 42 7 123] [--sizes 12 25 50]
 """
 import argparse

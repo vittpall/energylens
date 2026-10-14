@@ -1,14 +1,4 @@
-"""Workload profiling utilities with multi-modal support (text, image, video).
-
-This version handles both:
-1. HuggingFace datasets with embedded video bytes (UCF101 subset, local videos)
-2. Video-MME style datasets with YouTube URLs (requires yt-dlp)
-
-Key features:
-- Adaptive frame extraction based on video duration
-- Proper video token computation for Qwen2-VL
-- YouTube video downloading with caching
-"""
+"""Workload profiling utilities with multi-modal support (text, image, video)."""
 import os
 import csv
 import gc

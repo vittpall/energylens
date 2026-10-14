@@ -1,15 +1,8 @@
 """Live adaptive profiling on real GPUs.
 
---strategy doptimal_cost (default): each round picks the engine
-(TP, PP, token budget) with the best D-optimal gain per second, keeps it
-loaded, and measures its 5 most informative (max_tokens, batch) rows.
---strategy random: 50 random rows, measured grouped by engine (the baseline).
-Rows are written in the normal profiler CSV format to
-live_results/<model>/<strategy>_s<seed>/.
-
     python live_profiler.py --model Qwen/Qwen2.5-14B-Instruct
     python live_profiler.py --model Qwen/Qwen2.5-14B-Instruct --strategy random --seed 7
-    python live_profiler.py --model Qwen/Qwen2.5-14B-Instruct --n 80 --time-budget 900 \\
+    python live_profiler.py --model Qwen/Qwen2.5-14B-Instruct --n 80 --time-budget 900 \
         --reference ../nvidia/results_zeus/run_text_only_Qwen2.5-14B-Instruct_fp16/res_native/profiling_metrics.csv
 """
 import os

@@ -1,9 +1,5 @@
 """Pre-download a HuggingFace model (+ tokenizer/config) into the shared HF cache.
 
-Run this on a node with internet access (e.g. an Aurora login node), NOT via
-qsub — compute nodes are offline and model.pbs runs with HF_HUB_OFFLINE=1.
-
-Usage:
     python download_model.py
     python download_model.py --model Qwen/Qwen2.5-14B-Instruct
 """

@@ -1,36 +1,4 @@
-"""GPU energy on Intel Data Center GPU Max (Aurora) from the Level Zero energy counters.
-
-Zeus (used on NVIDIA, source/profiler.py) has no Intel GPU backend. Its NVIDIA
-method -- read a hardware energy accumulator at the start and end of a window,
-on every GPU the engine uses -- is reproduced here with the Level Zero System
-Resource Management API (Sysman): ``zesPowerGetEnergyCounter`` returns a
-monotonically increasing energy count in microjoules with a microsecond
-timestamp, per power domain.
-
-Device hierarchies. A GPU Max 1550 card has two tiles (stacks). Level Zero can
-expose them in two ways, selected by ``ZE_FLAT_DEVICE_HIERARCHY``:
-  FLAT       (Aurora's default) each tile is a device: 12 per node
-  COMPOSITE  each card is a device: 6 per node
-Sysman always enumerates *cards*; each card has a card-level power domain
-(``onSubdevice == False``) and, on this hardware, one domain per tile
-(``onSubdevice == True``, ``subdeviceId`` = tile). A compute device is mapped to
-the narrowest domain that covers it:
-  FLAT       tile i -> card i // tiles_per_card, tile domain i % tiles_per_card
-             (card domain if the driver exposes no tile domains; then a card is
-             charged once even if both of its tiles are in use, and a single
-             tile is charged with its idle sibling: energy_scope = "card")
-  COMPOSITE  card i -> card domain
-``ZE_AFFINITY_MASK`` (e.g. "0,1" or "0.0,0.1") is honoured when it restricts the
-visible devices. The hierarchy is detected from the number of devices PyTorch
-sees versus the cards Sysman reports; ``ENERGYLENS_XPU_HIERARCHY=flat|composite``
-overrides it. Run ``python test_intel_energy.py`` on a compute node first: it
-checks that loading device i raises the counter that device i maps to.
-
-Power. Sysman has no instantaneous power reading, only the energy counter, so
-the background poller derives power from counter differences every 100 ms.
-Unlike on NVIDIA (independent power sensor), ``avg_power_watts`` is therefore not
-independent of the energy column on Intel (power_source = "ze_counter_poll").
-"""
+"""GPU energy on Intel Data Center GPU Max (Aurora) from the Level Zero energy counters."""
 import ctypes
 import os
 import threading

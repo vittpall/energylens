@@ -1,20 +1,7 @@
 #!/usr/bin/env python3
 """Build the EnergyLens dataset (Parquet + dataset card) from the profiling CSVs.
 
-One row per measured batch. Every run folder of the repository is read:
-
-    nvidia/results_zeus/run_<modality>_<model>_<precision>/...   A100 grid      -> grid
-    intel/results_aurora/run_<modality>_<model>_<precision>/...  Max 1550 grid  -> grid
-    nvidia/results_zeus_online_day/run_online_<model>_<precision> day replay    -> online_day
-
-Rows that fail the validity checks (nvidia/validate_results.py) are kept and flagged
-in `valid`, so users can reproduce the paper's filtering or study the failures.
-
     python data/build_dataset.py [--out data/hf]
-
-The output folder is what gets uploaded to the Hugging Face Hub:
-
-    huggingface-cli upload <org>/energylens data/hf . --repo-type dataset
 """
 import argparse
 import glob

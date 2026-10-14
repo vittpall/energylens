@@ -1,13 +1,4 @@
 """Entry point for the profiling pipeline with multi-modal support, on Aurora
-(Intel Data Center GPU Max 1550). Same code as nvidia/main_profiler.py: energy
-is measured over every device the engine uses, from the Level Zero Sysman
-energy counters (source/energy_intel.py), the Intel counterpart of the Zeus /
-NVML counters used on the A100s. Only the defaults below differ.
-
-The model, modality and sweep are chosen on the command line, so several jobs
-can be queued at once without editing this file between submissions (a queued
-PBS job reads this file only when it starts, so editing it would change every
-job still waiting in the queue). model.pbs lists one line per model to profile.
 
     python main_profiler.py --model Qwen/Qwen2.5-14B-Instruct --tp 1 2 4 --pp 1 2 3 4 6
     python main_profiler.py --model tiiuae/falcon-mamba-7b
@@ -15,21 +6,7 @@ job still waiting in the queue). model.pbs lists one line per model to profile.
     python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --quantization bitsandbytes
     python main_profiler.py --model mistralai/Mixtral-8x7B-Instruct-v0.1 --tp 1 2 4 8 --pp 1 2 4 8
     python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --input-lengths 128 512 2048 4096
-    python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 \
-        --trace ../data/azure_traces/AzureLLMInferenceTrace_conv.csv ../data/azure_traces/AzureLLMInferenceTrace_code.csv
-
-With no arguments it profiles Qwen2.5-14B text-only in bf16.
-
-Output goes to ./results_aurora/run_<modality>_<model>_<fp16|bnb4bit>/<res_tag>/
-(--trace: ./results_aurora_trace/run_trace_<model>_<fp16|bnb4bit>/, see
-source/trace_workload.py; --input-lengths: ./results_aurora_inlen/.../in<L>/, merged
-into .../in_all/profiling_metrics.csv). The "fp16" tag means unquantized: on
-Intel the engine runs bf16 (profiling.py's default dtype).
-The older runs in results_for_rebuttal*/ used a two-point xpu-smi power
-estimate on device 0 at batch size 1, so they are not comparable with these.
-Only one job may write a given output folder at a time: profiling.py appends
-to the CSV and keeps a resume file there, so a second job on the same model
-would interleave rows. A lock file enforces this (see _acquire_output_lock).
+    python main_profiler.py --model mistralai/Mistral-7B-Instruct-v0.3 --trace ../data/azure_traces/AzureLLMInferenceTrace_conv.csv ../data/azure_traces/AzureLLMInferenceTrace_code.csv
 """
 import os
 
@@ -48,8 +25,7 @@ os.environ['TRANSFORMERS_TRUST_REMOTE_CODE'] = '1'
 # trying to allocate 776 MiB contiguous — exactly the case PyTorch recommends
 # this flag for. Set both the CUDA-specific and backend-agnostic env names.
 # NVIDIA only: on Aurora it makes every TP>1 / PP>1 vLLM engine lose a worker to a
-# GPU page fault ("Segmentation fault from GPU ... NotPresent"; jobs 8908821,
-# 8911503, 8914834, 8916594 -- the same engine without it ran clean).
+# GPU page fault ("Segmentation fault from GPU ... NotPresent").
 if os.environ.get('ENERGYLENS_BACKEND', '').lower() != 'intel':
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'

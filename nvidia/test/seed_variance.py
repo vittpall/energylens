@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
-"""
-Seed Variance Analysis
-======================
-Shows how much MAPE / R² varies across random training samples for each
-model configuration (dataset × n_train). Every method is scored on a held-out
-test set (--test-frac of the rows, drawn per seed), never on its training rows.  Unlike compare_cross_model.py,
-this script keeps every seed result instead of averaging them, so you can
-see the spread (std, min, max) introduced by the random sample draw.
+"""Seed Variance Analysis
 
-Usage:
     python seed_variance.py                         # all datasets, default seeds
     python seed_variance.py --n-seeds 10            # more seeds for tighter estimates
     python seed_variance.py --n-train 50 100 500
