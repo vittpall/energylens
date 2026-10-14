@@ -2,6 +2,10 @@
 
 Code and data for **EnergyLens: Interpretable Closed-Form Energy Models for Multimodal LLM Inference Serving**.
 
+**Project page with the interactive explorer:** https://anonymous.4open.science/w/energylens-AEB4/
+
+![EnergyLens pipeline: profile, discover the template once, calibrate twelve coefficients per model, select the layout](docs/assets/framework.png)
+
 EnergyLens predicts the GPU energy of LLM inference served with vLLM across tensor-parallel (TP)
 and pipeline-parallel (PP) layouts. Symbolic regression discovered the template once; for a new model,
 its 12 parameters are fitted from about 50 measured batches, and the fitted formula ranks every layout.

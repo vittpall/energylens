@@ -10,21 +10,21 @@
   color-scheme: light;
   --bg: #fcfcfb; --surface: #ffffff; --line: #e4e3df; --grid: #eeede9;
   --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
-  --accent: #2a78d6; --accent-soft: #e5effb; --pick: #eb6834; --el: #6250d6; --dot: #b9b8b3;
+  --c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#008300;--c7:#6250d6;--c8:#e34948; --accent: #2a78d6; --accent-soft: #e5effb; --pick: #eb6834; --el: #6250d6; --dot: #b9b8b3;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #141413; --surface: #1a1a19; --line: #2f2f2d; --grid: #262624;
     --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
-    --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
+    --c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--c8:#e66767; --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #141413; --surface: #1a1a19; --line: #2f2f2d; --grid: #262624;
   --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
-  --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
+  --c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--c8:#e66767; --accent: #3987e5; --accent-soft: #1d2a3b; --pick: #d95926; --el: #9085e9; --dot: #55544f;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text);
@@ -108,6 +108,20 @@ figcaption { color: #52514e; font-size: .88rem; margin-top: 8px; }
 .to-top { position: fixed; right: 16px; bottom: 16px; width: 40px; height: 40px; border-radius: 50%;
   border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; display: none;
   font-size: 1.1rem; z-index: 6; }
+
+.ds-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: .85rem; color: var(--text-2); margin-bottom: 6px; }
+.mini { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px;
+  padding: 3px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
+.ds-list { max-height: 190px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2px 8px; background: var(--bg); }
+.ds { display: flex; align-items: center; gap: 6px; font-size: .84rem; color: var(--text-2); padding: 3px 4px;
+  border-radius: 6px; cursor: pointer; }
+.ds.on { color: var(--text); background: var(--accent-soft); }
+.ds i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); flex: none; }
+.ds input { margin: 0; }
+input[type=search] { font: inherit; font-size: .95rem; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; }
 footer { border-top: 1px solid var(--line); padding-top: 20px; }
 
 footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: center; }
@@ -129,7 +143,7 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
   <div class="badge">📌 Under review</div>
   <nav class="links">
     <a href="#">📄 Paper</a>
-    <a href="#">💻 Code</a>
+    <a href="https://anonymous.4open.science/r/energylens-AEB4/">💻 Code</a>
     <a href="#dataset">📊 Dataset</a>
     <a href="#explorer">🔎 Explorer</a>
     <a href="#bibtex">📜 BibTeX</a>
@@ -208,37 +222,32 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
 
 <section id="explorer">
   <h2>Explore the measurements</h2>
-  <p>Each point is one layout serving the same batch. Points on the blue line are Pareto-optimal: no
-  other layout is both faster and cheaper. Move the latency target to see which layout uses least
-  energy while staying within <i>k</i>× of the fastest, and which one EnergyLens would pick from its
-  50-row fit.</p>
+  <p>Each point is one layout (TP × PP, token budget) serving the same batch. Tick one dataset to see its
+  Pareto frontier, the lowest-energy layout within the latency target and the one EnergyLens picks from its
+  50-row fit. Tick several to compare models, GPUs, workloads or precisions on the same axes.</p>
   <div class="panel">
     <div class="filters">
-      <label style="flex-basis:100%">Dataset<select id="f-ds"></select></label>
       <label>GPU<select id="f-hw"></select></label>
-      <label>Model<select id="f-model"></select></label>
       <label>Workload<select id="f-mod"></select></label>
       <label>Precision<select id="f-prec"></select></label>
+      <label>Search<input id="f-q" type="search" placeholder="model name"></label>
+    </div>
+    <div class="ds-head"><span id="ds-count"></span>
+      <span><button class="mini" id="ds-all">Select shown (max 8)</button> <button class="mini" id="ds-none">Clear</button></span></div>
+    <div class="ds-list" id="ds-list"></div>
+    <div class="filters" style="margin-top:14px">
       <label>Output tokens<select id="f-mt"></select></label>
       <label>Batch size<select id="f-bs"></select></label>
       <label>Token budget<select id="f-bud"></select></label>
+      <label>Scale<select id="f-scale"><option value="log">Log</option><option value="lin">Linear</option></select></label>
       <label>Latency target: <span id="k-val">2.0</span>× fastest<input type="range" id="f-k" min="1" max="5" step="0.1" value="2"></label>
     </div>
     <div class="chart-wrap" id="chart-wrap">
-      <svg id="chart" viewBox="0 0 960 440" role="img" aria-label="Energy per request against batch latency for every layout"></svg>
+      <svg id="chart" viewBox="0 0 960 460" role="img" aria-label="Energy per request against batch latency for every layout of the selected datasets"></svg>
       <div class="tip" id="tip"></div>
     </div>
-    <div class="legend">
-      <span><i style="background:var(--accent)"></i>Pareto frontier</span>
-      <span><i style="background:var(--dot)"></i>Other layouts</span>
-      <span><i style="background:var(--pick)"></i>Lowest energy within target (measured)</span>
-      <span><i style="background:var(--el)"></i>EnergyLens pick</span>
-    </div>
-    <div class="picks" id="picks"></div>
-    <details open>
-      <summary>All layouts for this batch</summary>
-      <div class="table-wrap"><table id="tbl"></table></div>
-    </details>
+    <div class="legend" id="legend"></div>
+    <div id="summary"></div>
     <p class="note" id="note"></p>
   </div>
 </section>
@@ -306,166 +315,241 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
     }).catch(() => {});
   };
 
-  const F = { hw: $("f-hw"), model: $("f-model"), mod: $("f-mod"), prec: $("f-prec"),
-              mt: $("f-mt"), bs: $("f-bs"), bud: $("f-bud"), k: $("f-k") };
-  let DATA = [];
+  // ---- explorer ----------------------------------------------------------------------------
+  const F = { hw: $("f-hw"), mod: $("f-mod"), prec: $("f-prec"), q: $("f-q"),
+              mt: $("f-mt"), bs: $("f-bs"), bud: $("f-bud"), k: $("f-k"), scale: $("f-scale") };
+  const MAX = 8;
+  const SLOTS = 8;                                   // categorical colours, assigned in selection order
+  const SHAPES = ["circle", "square", "triangle", "diamond"];
+  let DATA = [], selected = [];                      // selected: dataset indices, in the order ticked
   let sortKey = "E", sortAsc = true;
 
-  function uniq(a) { return [...new Set(a)]; }
-  function fill(sel, values, keep, fmt) {
-    const prev = keep ?? sel.value;
-    sel.innerHTML = values.map(v => `<option value="${v}">${fmt ? fmt(v) : v}</option>`).join("");
-    if (values.map(String).includes(String(prev))) sel.value = prev;
-  }
-  function datasets() { return DATA.filter(d => d.hardware === F.hw.value); }
-
-  function refreshFilters(level) {
-    if (level <= 0) fill(F.hw, uniq(DATA.map(d => d.hardware)));
-    const byHw = datasets();
-    if (level <= 1) fill(F.model, uniq(byHw.map(d => d.model)));
-    const byModel = byHw.filter(d => d.model === F.model.value);
-    if (level <= 2) fill(F.mod, uniq(byModel.map(d => d.modality)));
-    const byMod = byModel.filter(d => d.modality === F.mod.value);
-    if (level <= 3) fill(F.prec, uniq(byMod.map(d => d.precision)));
-    const ds = current();
-    if (!ds) return;
-    const rows = ds.rows;
-    if (level <= 4) fill(F.mt, uniq(rows.map(r => r[0])).sort((a, b) => a - b));
-    const r1 = rows.filter(r => r[0] == F.mt.value);
-    if (level <= 5) fill(F.bs, uniq(r1.map(r => r[1])).sort((a, b) => a - b));
-    const r2 = r1.filter(r => r[1] == F.bs.value);
-    if (level <= 6) fill(F.bud, uniq(r2.map(r => r[4])).sort((a, b) => a - b), undefined,
-                         v => v.toLocaleString());
-  }
-  function current() {
-    return DATA.find(d => d.hardware === F.hw.value && d.model === F.model.value &&
-                          d.modality === F.mod.value && d.precision === F.prec.value);
+  const uniq = a => [...new Set(a)];
+  const label = d => `${d.model} · ${d.modality}${d.precision !== "fp16" ? " · " + d.precision : ""} · ${d.hardware}`;
+  const color = slot => `var(--c${slot + 1})`;
+  const fmt = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toPrecision(2);
+  function fill(sel, values, fmtf, withAll) {
+    const prev = sel.value;
+    sel.innerHTML = (withAll ? [`<option value="">All</option>`] : [])
+      .concat(values.map(v => `<option value="${v}">${fmtf ? fmtf(v) : v}</option>`)).join("");
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
   }
 
-  function points() {
-    const ds = current();
-    if (!ds) return [];
-    return ds.rows.filter(r => r[0] == F.mt.value && r[1] == F.bs.value && r[4] == F.bud.value)
-      .map(r => ({ tp: r[2], pp: r[3], n: r[2] * r[3], E: r[5], L: r[6], P: r[7], Ep: r[8],
-                   label: `TP${r[2]} × PP${r[3]}` }));
+  function shown() {
+    const q = F.q.value.trim().toLowerCase();
+    return DATA.map((d, i) => i).filter(i => {
+      const d = DATA[i];
+      return (!F.hw.value || d.hardware === F.hw.value) && (!F.mod.value || d.modality === F.mod.value) &&
+             (!F.prec.value || d.precision === F.prec.value) && (!q || label(d).toLowerCase().includes(q));
+    });
   }
 
+  function renderList() {
+    const s = shown();
+    $("ds-count").textContent = `${s.length} of ${DATA.length} datasets shown · ${selected.length} selected`;
+    $("ds-list").innerHTML = s.map(i => {
+      const on = selected.includes(i), slot = selected.indexOf(i);
+      return `<label class="ds${on ? " on" : ""}"><input type="checkbox" data-i="${i}" ${on ? "checked" : ""}
+        ${!on && selected.length >= MAX ? "disabled" : ""}>` +
+        `<i style="background:${on ? color(slot) : "transparent"}"></i>${label(DATA[i])}</label>`;
+    }).join("");
+    $("ds-list").querySelectorAll("input").forEach(el => el.onchange = () => {
+      const i = +el.dataset.i;
+      selected = el.checked ? [...selected, i] : selected.filter(x => x !== i);
+      update();
+    });
+  }
+
+  // workload menus list every value any selected dataset measured; a dataset that lacks the
+  // chosen one is shown at its nearest measured batch (closest output length, then batch size)
+  function refreshWorkload() {
+    const rows = selected.flatMap(i => DATA[i].rows);
+    fill(F.mt, uniq(rows.map(r => r[0])).sort((a, b) => a - b));
+    fill(F.bs, uniq(rows.filter(r => r[0] == F.mt.value).map(r => r[1])).sort((a, b) => a - b));
+    fill(F.bud, uniq(rows.filter(r => r[0] == F.mt.value && r[1] == F.bs.value).map(r => r[4]))
+      .sort((a, b) => a - b), v => (+v).toLocaleString(), true);
+  }
+  const near = (vals, v) => vals.reduce((a, b) => Math.abs(Math.log(b / v)) < Math.abs(Math.log(a / v)) ? b : a);
+  function cell(i) {
+    const rows = DATA[i].rows;
+    const mt = near(uniq(rows.map(r => r[0])), +F.mt.value);
+    const bs = near(uniq(rows.filter(r => r[0] === mt).map(r => r[1])), +F.bs.value);
+    return { mt, bs, exact: mt == F.mt.value && bs == F.bs.value };
+  }
+  function points(i) {
+    const c = cell(i);
+    let rs = DATA[i].rows.filter(r => r[0] === c.mt && r[1] === c.bs);
+    if (F.bud.value && rs.some(r => r[4] == F.bud.value)) rs = rs.filter(r => r[4] == F.bud.value);
+    return rs.map(r => ({ ds: i, tp: r[2], pp: r[3], n: r[2] * r[3], bud: r[4], E: r[5], L: r[6], P: r[7], Ep: r[8],
+                          mt: c.mt, bs: c.bs, exact: c.exact,
+                          label: `TP${r[2]}×PP${r[3]}` + (F.bud.value ? "" : ` · b${r[4]}`) }));
+  }
   function pareto(pts) {
     const s = [...pts].sort((a, b) => a.L - b.L || a.E - b.E);
     const out = []; let best = Infinity;
     for (const p of s) if (p.E < best) { out.push(p); best = p.E; }
     return out;
   }
-
-  function niceTicks(lo, hi, n) {
-    const span = hi - lo || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
-    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
-    const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(10));
-    return t;
-  }
-  const fmt = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toPrecision(2);
-
-  function render() {
-    $("k-val").textContent = (+F.k.value).toFixed(1);
-    const pts = points();
-    const svg = $("chart");
-    const W = 960, H = 440, m = { l: 64, r: 20, t: 16, b: 48 };
-    if (!pts.length) { svg.innerHTML = ""; $("picks").innerHTML = ""; $("tbl").innerHTML = ""; return; }
-    const front = new Set(pareto(pts));
+  function choices(pts) {
     const k = +F.k.value, fastest = Math.min(...pts.map(p => p.L)), target = k * fastest;
     const feas = pts.filter(p => p.L <= target + 1e-12);
     const best = feas.reduce((a, b) => (b.E < a.E ? b : a));
     const hasPred = pts.every(p => p.Ep != null);
-    const elPick = hasPred ? feas.reduce((a, b) => (b.Ep < a.Ep ? b : a)) : null;
-    const fewest = [...feas].sort((a, b) => a.n - b.n || a.pp - b.pp)[0];
+    const el = hasPred ? feas.reduce((a, b) => (b.Ep < a.Ep ? b : a)) : null;
+    const fewest = [...feas].sort((a, b) => a.n - b.n || a.pp - b.pp || a.E - b.E)[0];
     const fast = pts.find(p => p.L === fastest);
+    return { target, best, el, fewest, fast, hasPred };
+  }
 
-    const xs = pts.map(p => p.L), ys = pts.map(p => p.E);
-    const x0 = 0, x1 = Math.max(...xs, target) * 1.06, y0 = 0, y1 = Math.max(...ys) * 1.1;
-    const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r);
-    const Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+  function ticks(lo, hi, log) {
+    if (log) {
+      const out = [];
+      for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hi)); e++)
+        for (const m of [1, 2, 5]) { const v = m * 10 ** e; if (v >= lo && v <= hi) out.push(v); }
+      return out.length >= 2 ? out : [lo, hi];
+    }
+    const span = hi - lo || 1, mag = 10 ** Math.floor(Math.log10(span / 6));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= 6) || 10 * mag;
+    const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(10));
+    return t;
+  }
+  function marker(shape, x, y, r, fill, extra) {
+    const a = `fill="${fill}" ${extra || ""}`;
+    if (shape === "square") return `<rect x="${x - r * .85}" y="${y - r * .85}" width="${r * 1.7}" height="${r * 1.7}" rx="1.5" ${a}/>`;
+    if (shape === "triangle") return `<path d="M${x},${y - r * 1.1} L${x + r},${y + r * .8} L${x - r},${y + r * .8} Z" ${a}/>`;
+    if (shape === "diamond") return `<path d="M${x},${y - r * 1.15} L${x + r * 1.15},${y} L${x},${y + r * 1.15} L${x - r * 1.15},${y} Z" ${a}/>`;
+    return `<circle cx="${x}" cy="${y}" r="${r}" ${a}/>`;
+  }
+
+  function render() {
+    $("k-val").textContent = (+F.k.value).toFixed(1);
+    const svg = $("chart"), single = selected.length === 1;
+    const groups = selected.map((i, slot) => ({ i, slot, pts: points(i) })).filter(g => g.pts.length);
+    if (!groups.length) {
+      svg.innerHTML = `<text x="480" y="230" text-anchor="middle" fill="var(--muted)">` +
+"Tick at least one dataset above." + `</text>`;
+      $("legend").innerHTML = $("summary").innerHTML = ""; return;
+    }
+    const log = F.scale.value === "log";
+    const all = groups.flatMap(g => g.pts);
+    const W = 960, H = 460, m = { l: 70, r: 20, t: 16, b: 50 };
+    let x0 = Math.min(...all.map(p => p.L)), x1 = Math.max(...all.map(p => p.L));
+    let y0 = Math.min(...all.map(p => p.E)), y1 = Math.max(...all.map(p => p.E));
+    groups.forEach(g => g.c = choices(g.pts));
+    if (single) x1 = Math.max(x1, groups[0].c.target);
+    if (log) { x0 /= 1.25; x1 *= 1.25; y0 /= 1.3; y1 *= 1.3; } else { x0 = 0; y0 = 0; x1 *= 1.06; y1 *= 1.1; }
+    const sx = v => log ? Math.log10(v) : v;
+    const X = v => m.l + (sx(v) - sx(x0)) / (sx(x1) - sx(x0)) * (W - m.l - m.r);
+    const Y = v => H - m.b - (sx(v) - sx(y0)) / (sx(y1) - sx(y0)) * (H - m.t - m.b);
     let g = "";
-    for (const t of niceTicks(y0, y1, 6)) g += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}"/>` +
+    for (const t of ticks(y0, y1, log)) g += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}"/>` +
       `<text x="${m.l - 8}" y="${Y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
-    for (const t of niceTicks(x0, x1, 8)) g += `<text x="${X(t)}" y="${H - m.b + 18}" text-anchor="middle">${fmt(t)}</text>`;
+    for (const t of ticks(x0, x1, log)) g += `<text x="${X(t)}" y="${H - m.b + 18}" text-anchor="middle">${fmt(t)}</text>`;
     g += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line)"/>`;
-    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Batch latency (s)</text>`;
-    g += `<text transform="translate(16 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Energy per request (J)</text>`;
-    // latency target band
-    g += `<rect x="${X(target)}" y="${m.t}" width="${Math.max(0, W - m.r - X(target))}" height="${H - m.t - m.b}" fill="var(--grid)" opacity=".7"/>`;
-    g += `<line x1="${X(target)}" x2="${X(target)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
-    g += `<text x="${X(target) + 6}" y="${m.t + 14}" fill="var(--muted)" style="font-size:12px">target ${k.toFixed(1)}× fastest</text>`;
-    const fr = pareto(pts);
-    g += `<polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${fr.map(p => `${X(p.L)},${Y(p.E)}`).join(" ")}"/>`;
-    pts.forEach((p, i) => {
-      const c = p === best ? "var(--pick)" : front.has(p) ? "var(--accent)" : "var(--dot)";
-      const r = p === best ? 8 : 6;
-      g += `<circle data-i="${i}" cx="${X(p.L)}" cy="${Y(p.E)}" r="${r}" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`;
-      if (elPick && p === elPick && p !== best)
-        g += `<circle cx="${X(p.L)}" cy="${Y(p.E)}" r="11" fill="none" stroke="var(--el)" stroke-width="2"/>`;
-      if (elPick && p === elPick && p === best)
-        g += `<circle cx="${X(p.L)}" cy="${Y(p.E)}" r="12" fill="none" stroke="var(--el)" stroke-width="2"/>`;
-      if (front.has(p) || p === best)
-        g += `<text x="${X(p.L) + 10}" y="${Y(p.E) - 8}" fill="var(--text-2)" style="font-size:11px">${p.tp}×${p.pp}</text>`;
-    });
-    // hit targets bigger than the marks
-    pts.forEach((p, i) => g += `<circle class="hit" data-i="${i}" cx="${X(p.L)}" cy="${Y(p.E)}" r="14" fill="transparent"/>`);
+    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Batch latency (s)${log ? ", log scale" : ""}</text>`;
+    g += `<text transform="translate(16 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" fill="var(--text-2)" style="font-size:13px">Energy per request (J)${log ? ", log" : ""}</text>`;
+    if (single) {
+      const t = groups[0].c.target;
+      g += `<rect x="${X(t)}" y="${m.t}" width="${Math.max(0, W - m.r - X(t))}" height="${H - m.t - m.b}" fill="var(--grid)" opacity=".7"/>`;
+      g += `<line x1="${X(t)}" x2="${X(t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+      g += `<text x="${X(t) + 6}" y="${m.t + 14}" fill="var(--muted)" style="font-size:12px">target ${(+F.k.value).toFixed(1)}× fastest</text>`;
+    }
+    const hits = [];
+    for (const gr of groups) {
+      const col = single ? "var(--accent)" : color(gr.slot), shape = single ? "circle" : SHAPES[gr.slot % SHAPES.length];
+      const front = new Set(pareto(gr.pts));
+      g += `<polyline fill="none" stroke="${col}" stroke-width="2" points="${pareto(gr.pts).map(p => `${X(p.L)},${Y(p.E)}`).join(" ")}"/>`;
+      for (const p of gr.pts) {
+        const isBest = p === gr.c.best;
+        const fillc = single ? (isBest ? "var(--pick)" : front.has(p) ? col : "var(--dot)") : col;
+        const op = !single && !front.has(p) && !isBest ? `opacity=".35"` : "";
+        g += marker(shape, X(p.L), Y(p.E), isBest ? 8 : 5.5, fillc, `stroke="var(--surface)" stroke-width="2" ${op}`);
+        if (isBest && !single) g += marker(shape, X(p.L), Y(p.E), 12, "none", `stroke="${col}" stroke-width="2"`);
+        if (p === gr.c.el) g += `<circle cx="${X(p.L)}" cy="${Y(p.E)}" r="${isBest ? 16 : 12}" fill="none" stroke="var(--el)" stroke-width="2" stroke-dasharray="${single ? "0" : "3 3"}"/>`;
+        if (single && (front.has(p) || isBest))
+          g += `<text x="${X(p.L) + 10}" y="${Y(p.E) - 8}" fill="var(--text-2)" style="font-size:11px">${p.tp}×${p.pp}</text>`;
+        hits.push(p);
+      }
+    }
+    hits.forEach((p, j) => g += `<circle class="hit" data-j="${j}" cx="${X(p.L)}" cy="${Y(p.E)}" r="12" fill="transparent"/>`);
     svg.innerHTML = `<g class="axis">${g}</g>`;
 
     const tip = $("tip"), wrap = $("chart-wrap");
     svg.querySelectorAll(".hit").forEach(el => {
       el.addEventListener("mouseenter", () => {
-        const p = pts[+el.dataset.i];
-        tip.innerHTML = `<b>${p.label}</b> · ${p.n} device${p.n > 1 ? "s" : ""}<br>Energy ${fmt(p.E)} J/request` +
-          (p.Ep != null ? ` (EnergyLens ${fmt(p.Ep)})` : "") + `<br>Latency ${fmt(p.L)} s · Power ${fmt(p.P)} W`;
+        const p = hits[+el.dataset.j];
+        tip.innerHTML = `<b>${label(DATA[p.ds])}</b><br>${p.label} · ${p.n} device${p.n > 1 ? "s" : ""} · budget ${p.bud.toLocaleString()}` +
+          `<br>Energy ${fmt(p.E)} J/request` + (p.Ep != null ? ` (EnergyLens ${fmt(p.Ep)})` : "") +
+          `<br>Latency ${fmt(p.L)} s · Power ${fmt(p.P)} W` +
+          (p.exact ? "" : `<br><i>nearest measured batch: ${p.mt} output tokens, batch ${p.bs}</i>`);
         tip.style.display = "block";
         const b = wrap.getBoundingClientRect(), r = el.getBoundingClientRect();
         let left = r.left - b.left + 18; if (left + tip.offsetWidth > b.width) left = r.left - b.left - tip.offsetWidth - 8;
-        tip.style.left = left + "px"; tip.style.top = Math.max(0, r.top - b.top - 10) + "px";
+        tip.style.left = Math.max(0, left) + "px"; tip.style.top = Math.max(0, r.top - b.top - 10) + "px";
       });
       el.addEventListener("mouseleave", () => tip.style.display = "none");
     });
 
-    const pct = p => (100 * (p.E / best.E - 1));
-    const card = (cls, k_, p, extra) => `<div class="pick ${cls}"><div class="k">${k_}</div>` +
-      `<div class="v">${p.label}</div><div class="d">${fmt(p.E)} J/request · ${fmt(p.L)} s${extra || ""}</div></div>`;
-    let html = card("best", "Lowest energy within target", best, "");
-    if (elPick) html += card("el", "EnergyLens pick (50-row fit)", elPick,
-      elPick === best ? " · optimal" : ` · +${pct(elPick).toFixed(1)}% energy`);
-    html += card("", "Fewest devices within target", fewest, fewest === best ? " · optimal" : ` · +${pct(fewest).toFixed(1)}% energy`);
-    html += card("", "Fastest layout", fast, fast === best ? " · optimal" : ` · +${pct(fast).toFixed(1)}% energy`);
-    $("picks").innerHTML = html;
+    // legend
+    const sw = (c, shape) => `<svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:-2px;margin-right:6px">${marker(shape, 7, 7, 5, c)}</svg>`;
+    $("legend").innerHTML = single
+      ? `<span>${sw("var(--accent)", "circle")}Pareto frontier</span><span>${sw("var(--dot)", "circle")}Other layouts</span>` +
+        `<span>${sw("var(--pick)", "circle")}Lowest energy within target (measured)</span><span><i style="border:2px solid var(--el);background:transparent"></i>EnergyLens pick</span>`
+      : groups.map(gr => `<span>${sw(color(gr.slot), SHAPES[gr.slot % SHAPES.length])}${label(DATA[gr.i])}</span>`).join("") +
+        `<span>Line: Pareto frontier · large ring: lowest energy within ${(+F.k.value).toFixed(1)}× fastest · dashed ring: EnergyLens pick</span>`;
 
-    const cols = [["label", "Layout"], ["n", "Devices"], ["L", "Latency (s)"], ["E", "Energy (J/req)"],
-                  ["Ep", "EnergyLens (J/req)"], ["P", "Power (W)"]].filter(c => c[0] !== "Ep" || hasPred);
-    const rows = [...pts].sort((a, b) => {
-      const va = a[sortKey], vb = b[sortKey];
-      return (typeof va === "string" ? va.localeCompare(vb) : va - vb) * (sortAsc ? 1 : -1);
-    });
-    $("tbl").innerHTML = `<thead><tr>${cols.map(c => `<th data-k="${c[0]}">${c[1]}${sortKey === c[0] ? (sortAsc ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead>` +
-      `<tbody>${rows.map(p => `<tr class="${front.has(p) ? "front" : ""}">${cols.map(c =>
-        `<td>${typeof p[c[0]] === "number" ? fmt(p[c[0]]) : p[c[0]]}</td>`).join("")}</tr>`).join("")}</tbody>`;
-    $("tbl").querySelectorAll("th").forEach(th => th.onclick = () => {
-      const k2 = th.dataset.k; sortAsc = sortKey === k2 ? !sortAsc : true; sortKey = k2; render();
-    });
-    $("note").textContent = hasPred
-      ? "Means over repeated batches of the same cell. EnergyLens predictions come from one fit on 50 random measured rows of this dataset."
-      : "Means over repeated batches of the same cell. Intel counters read whole cards (two tiles each); predictions are shown for A100 datasets.";
+    // summary
+    const extra = (p, best) => p === best ? "optimal" : `+${(100 * (p.E / best.E - 1)).toFixed(1)}%`;
+    if (single) {
+      const { best, el, fewest, fast } = groups[0].c;
+      const card = (cls, k_, p, x) => `<div class="pick ${cls}"><div class="k">${k_}</div><div class="v">${p.label}</div>` +
+        `<div class="d">${fmt(p.E)} J/request · ${fmt(p.L)} s${x ? " · " + x : ""}</div></div>`;
+      let html = `<div class="picks">` + card("best", "Lowest energy within target", best);
+      if (el) html += card("el", "EnergyLens pick (50-row fit)", el, extra(el, best) + " energy");
+      html += card("", "Fewest devices within target", fewest, extra(fewest, best) + " energy");
+      html += card("", "Fastest layout", fast, extra(fast, best) + " energy") + `</div>`;
+      const pts = groups[0].pts, front = new Set(pareto(pts));
+      const cols = [["label", "Layout"], ["n", "Devices"], ["L", "Latency (s)"], ["E", "Energy (J/req)"],
+                    ["Ep", "EnergyLens (J/req)"], ["P", "Power (W)"]].filter(c => c[0] !== "Ep" || groups[0].c.hasPred);
+      const rows = [...pts].sort((a, b) => {
+        const va = a[sortKey], vb = b[sortKey];
+        return (typeof va === "string" ? va.localeCompare(vb) : (va ?? 0) - (vb ?? 0)) * (sortAsc ? 1 : -1);
+      });
+      html += `<details open><summary>All layouts for this batch</summary><div class="table-wrap"><table id="tbl">` +
+        `<thead><tr>${cols.map(c => `<th data-k="${c[0]}">${c[1]}${sortKey === c[0] ? (sortAsc ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead>` +
+        `<tbody>${rows.map(p => `<tr class="${front.has(p) ? "front" : ""}">${cols.map(c =>
+          `<td>${typeof p[c[0]] === "number" ? fmt(p[c[0]]) : p[c[0]]}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
+      $("summary").innerHTML = html;
+      $("summary").querySelectorAll("th").forEach(th => th.onclick = () => {
+        const k2 = th.dataset.k; sortAsc = sortKey === k2 ? !sortAsc : true; sortKey = k2; render();
+      });
+    } else {
+      $("summary").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Lowest energy within target</th>` +
+        `<th>J/request</th><th>EnergyLens pick</th><th>Fewest devices</th><th>Fastest</th></tr></thead><tbody>` +
+        groups.map(gr => {
+          const { best, el, fewest, fast } = gr.c;
+          const p0 = gr.pts[0], at = p0.exact ? "" : ` <span style="color:var(--muted)">(at ${p0.mt} tok, batch ${p0.bs})</span>`;
+          return `<tr><td>${sw(color(gr.slot), SHAPES[gr.slot % SHAPES.length])}${label(DATA[gr.i])}${at}</td><td>${best.label}</td><td>${fmt(best.E)}</td>` +
+            `<td>${el ? `${el.label} (${extra(el, best)})` : "—"}</td><td>${fewest.label} (${extra(fewest, best)})</td>` +
+            `<td>${fast.label} (${extra(fast, best)})</td></tr>`;
+        }).join("") + `</tbody></table></div>`;
+    }
+    $("note").textContent = "Means over repeated batches of the same cell. EnergyLens predictions come from one fit on 50 random " +
+      "measured rows of each A100 dataset; Intel datasets show measured data only (counters read whole cards).";
   }
 
-  // one menu with every dataset; it drives the filters below and follows them
-  const dsLabel = d => `${d.hardware} · ${d.model} · ${d.modality} · ${d.precision}`;
-  function syncDs() { const d = current(); if (d) $("f-ds").value = String(DATA.indexOf(d)); }
-  $("f-ds").addEventListener("change", () => {
-    const d = DATA[+$("f-ds").value];
-    F.hw.value = d.hardware; refreshFilters(1);
-    F.model.value = d.model; refreshFilters(2);
-    F.mod.value = d.modality; refreshFilters(3);
-    F.prec.value = d.precision; refreshFilters(4);
-    render();
-  });
-  const chain = [F.hw, F.model, F.mod, F.prec, F.mt, F.bs, F.bud];
-  chain.forEach((sel, i) => sel.addEventListener("change", () => { refreshFilters(i + 1); syncDs(); render(); }));
+  function update() { renderList(); refreshWorkload(); render(); }
+
+  [F.hw, F.mod, F.prec].forEach(s => s.addEventListener("change", renderList));
+  F.q.addEventListener("input", renderList);
+  $("ds-all").onclick = () => {
+    for (const i of shown()) if (selected.length < MAX && !selected.includes(i)) selected.push(i);
+    update();
+  };
+  $("ds-none").onclick = () => { selected = []; update(); };
+  F.mt.addEventListener("change", () => { refreshWorkload(); render(); });
+  F.bs.addEventListener("change", () => { refreshWorkload(); render(); });
+  [F.bud, F.scale].forEach(s => s.addEventListener("change", render));
   F.k.addEventListener("input", render);
 
   // Resolve data/ against the page's folder: hosts that serve the page without a trailing
@@ -481,14 +565,14 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
   });
   loadScript().catch(() => fetch(base + "data/site.json").then(r => r.json())).then(j => {
     DATA = j.datasets;
-    $("f-ds").innerHTML = DATA.map((d, i) => `<option value="${i}">${dsLabel(d)}</option>`).join("");
-    refreshFilters(0);
-    // a default that shows a non-trivial frontier
-    if ([...F.model.options].some(o => o.value === "Qwen2.5-14B")) { F.model.value = "Qwen2.5-14B"; refreshFilters(2); }
-    const pickMid = (sel, lvl) => { const o = [...sel.options]; if (o.length) { sel.value = o[Math.floor(o.length / 2)].value; refreshFilters(lvl); } };
-    pickMid(F.mt, 5); pickMid(F.bs, 6);
-    const bud = [...F.bud.options]; if (bud.length) F.bud.value = bud[bud.length - 1].value;
-    syncDs();
+    fill(F.hw, uniq(DATA.map(d => d.hardware)), null, true);
+    fill(F.mod, uniq(DATA.map(d => d.modality)), null, true);
+    fill(F.prec, uniq(DATA.map(d => d.precision)), null, true);
+    const pick = (model, hw) => DATA.findIndex(d => d.model === model && d.hardware === hw && d.modality === "text" && d.precision === "fp16");
+    selected = [pick("Qwen2.5-14B", "A100")].filter(i => i >= 0);
+    renderList(); refreshWorkload();
+    const mid = sel => { const o = [...sel.options]; if (o.length) sel.value = o[Math.floor(o.length / 2)].value; };
+    mid(F.mt); refreshWorkload(); mid(F.bs); refreshWorkload();
     render();
   }).catch(() => { $("note").textContent = "Could not load the explorer data (data/site.js)."; });
 })();
