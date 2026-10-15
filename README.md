@@ -99,7 +99,7 @@ Run the scripts from `nvidia/` unless noted otherwise. Outputs go to `nvidia/res
 | Distribution shift and cross-model transfer | `python test/shift_transfer.py` |
 | Day-long live replay: layout selection policies | `python test/online_eval.py --online results_zeus_online_day/run_online_<model>_fp16 ...`, then `python test/policy_eval.py results_figures/online_run_online_*` |
 | Intel GPU Max 1550 (accuracy, card correction, comparison with A100) | `python test/aurora_eval.py`, `python viz/aurora.py` |
-| Quantized checkpoints | `python viz/quantized.py` |
+| Quantized checkpoints | `python viz/quantized.py`; choosing checkpoint and layout under an MMLU limit: `python test/quant_selection.py` |
 | MaverIQ reimplementation check | `python test/maveriq_reproduction.py` |
 | Characterization figures (TP/PP, power, Pareto) | `python viz/characterization.py` |
 | Evaluation figures | `python viz/evaluation.py` |

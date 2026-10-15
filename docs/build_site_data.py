@@ -75,6 +75,17 @@ def main():
     for model, mod, run, *prec in AURORA:
         p = os.path.join(ROOT, "intel", "results_aurora", f"run_{run}", "res_native", "profiling_metrics.csv")
         out.append(entry("Max 1550", model, mod, prec[0] if prec else "fp16", p, False))
+    # MMLU (5-shot) per A100 checkpoint, and the layouts where vLLM 0.16 bitsandbytes gives correct output
+    mmlu = {"Llama-3.1-8B": {"fp16": 68.4, "awq4bit": 66.4, "w8a8": 67.8},
+            "Qwen2.5-14B": {"fp16": 79.9, "awq4bit": 78.9, "gptq8bit": 79.9, "bnb4bit": 79.3}}
+    valid = {("Llama-3.1-8B", "bnb4bit"): [[1, 1], [4, 1]], ("Qwen2.5-14B", "bnb4bit"): [[1, 1]],
+             ("Mistral-7B", "bnb4bit"): [[1, 1], [4, 1]]}
+    for d in out:
+        if d["hardware"] == "A100" and d["modality"] == "text":
+            if d["precision"] in mmlu.get(d["model"], {}):
+                d["mmlu"] = mmlu[d["model"]][d["precision"]]
+            if (d["model"], d["precision"]) in valid:
+                d["valid_layouts"] = valid[(d["model"], d["precision"])]
     meta = {"columns": ["max_tokens", "batch_size", "tp", "pp", "budget", "energy_J_per_request",
                         "latency_s", "power_W", "energylens_pred_J_per_request"],
             "datasets": out}

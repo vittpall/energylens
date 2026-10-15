@@ -131,7 +131,7 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
 <body>
 <nav class="top" id="nav"><div class="inner">
   <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#method">Method</a>
-  <a href="#results">Results</a><a href="#explorer">Explorer</a><a href="#dataset">Dataset</a>
+  <a href="#results">Results</a><a href="#explorer">Explorer</a><a href="#precision">Precision</a><a href="#dataset">Dataset</a>
   <a href="#conclusion">Conclusion</a><a href="#bibtex">BibTeX</a>
   <span class="spacer"></span><button id="theme" aria-label="Toggle dark mode">◐ Dark mode</button>
 </div></nav>
@@ -250,6 +250,26 @@ footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: c
     <div class="legend" id="legend"></div>
     <div id="summary"></div>
     <p class="note" id="note"></p>
+  </div>
+</section>
+
+<section id="precision">
+  <h2>Precision under an accuracy limit</h2>
+  <p>Quantized checkpoints change both energy and accuracy. Pick a model and the largest MMLU drop you accept:
+  checkpoints within the limit are allowed, and the lowest-energy (checkpoint, layout) among them is the measured
+  optimum. EnergyLens, fitted separately on 50 rows of each checkpoint, makes its choice from its predictions.
+  A100 data; bitsandbytes only on the layouts where it produced correct output.</p>
+  <div class="panel">
+    <div class="filters">
+      <label>Model<select id="q-model"></select></label>
+      <label>Output tokens<select id="q-mt"></select></label>
+      <label>Batch size<select id="q-bs"></select></label>
+      <label>Max MMLU drop: <span id="q-dval">1.0</span> points<input type="range" id="q-delta" min="0" max="3" step="0.5" value="1"></label>
+    </div>
+    <div class="picks" id="q-picks"></div>
+    <div class="table-wrap"><table id="q-tbl"></table></div>
+    <p class="note">MMLU: 5-shot, measured once per checkpoint. Energy: J per request, mean over repeated batches;
+    each checkpoint shows its lowest-energy layout for this batch.</p>
   </div>
 </section>
 
@@ -553,6 +573,61 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
   [F.bud, F.scale].forEach(s => s.addEventListener("change", render));
   F.k.addEventListener("input", render);
 
+
+  // ---- precision under an accuracy limit ----------------------------------------------------
+  const Q = { model: $("q-model"), mt: $("q-mt"), bs: $("q-bs"), d: $("q-delta") };
+  const PREC_NAME = { fp16: "FP16", awq4bit: "AWQ 4-bit", w8a8: "W8A8", gptq8bit: "GPTQ 8-bit", bnb4bit: "bitsandbytes 4-bit" };
+  function qsets() {
+    return DATA.filter(d => d.hardware === "A100" && d.modality === "text" && d.mmlu != null && d.model === Q.model.value);
+  }
+  function qrows(d) {
+    const ok = d.valid_layouts ? new Set(d.valid_layouts.map(v => v.join(","))) : null;
+    return d.rows.filter(r => !ok || ok.has(r[2] + "," + r[3]));
+  }
+  function qfill() {
+    const sets = qsets(); if (!sets.length) return;
+    const common = (col, f) => sets.map(d => new Set(qrows(d).filter(f).map(r => r[col])))
+      .reduce((a, b) => new Set([...a].filter(x => b.has(x))));
+    fill(Q.mt, [...common(0, () => true)].sort((a, b) => a - b));
+    fill(Q.bs, [...common(1, r => r[0] == Q.mt.value)].sort((a, b) => a - b));
+  }
+  function qrender() {
+    $("q-dval").textContent = (+Q.d.value).toFixed(1);
+    const sets = qsets(); if (!sets.length) return;
+    const fp = sets.find(d => d.precision === "fp16"), delta = +Q.d.value;
+    const cand = sets.map(d => {
+      const rs = qrows(d).filter(r => r[0] == Q.mt.value && r[1] == Q.bs.value);
+      if (!rs.length) return null;
+      const best = rs.reduce((a, b) => (b[5] < a[5] ? b : a)), pred = rs.reduce((a, b) => (b[8] < a[8] ? b : a));
+      return { d, rs, best, pred, drop: +(fp.mmlu - d.mmlu).toFixed(1), allowed: fp.mmlu - d.mmlu <= delta + 1e-9 };
+    }).filter(Boolean);
+    const allowed = cand.filter(c => c.allowed);
+    const lay = r => `TP${r[2]}×PP${r[3]}`;
+    const opt = allowed.reduce((a, b) => (b.best[5] < a.best[5] ? b : a));
+    const el = allowed.reduce((a, b) => (b.pred[8] < a.pred[8] ? b : a));
+    const fpc = cand.find(c => c.d.precision === "fp16");
+    const pct = e => (100 * (e / opt.best[5] - 1)).toFixed(1);
+    const save = e => (100 * (1 - e / fpc.best[5])).toFixed(0);
+    $("q-picks").innerHTML =
+      `<div class="pick best"><div class="k">Lowest energy within the limit</div><div class="v">${PREC_NAME[opt.d.precision]}, ${lay(opt.best)}</div>` +
+      `<div class="d">${fmt(opt.best[5])} J/request · ${save(opt.best[5])}% less than the best FP16 layout</div></div>` +
+      `<div class="pick el"><div class="k">EnergyLens choice</div><div class="v">${PREC_NAME[el.d.precision]}, ${lay(el.pred)}</div>` +
+      `<div class="d">measured ${fmt(el.pred[5])} J/request · ${el.pred === opt.best ? "optimal" : "+" + pct(el.pred[5]) + "% energy"}</div></div>` +
+      `<div class="pick"><div class="k">Best FP16 layout</div><div class="v">${lay(fpc.best)}</div><div class="d">${fmt(fpc.best[5])} J/request</div></div>`;
+    $("q-tbl").innerHTML = `<thead><tr><th>Checkpoint</th><th>MMLU</th><th>Drop</th><th>Allowed</th><th>Best layout</th><th>Energy (J/req)</th><th>vs FP16</th></tr></thead><tbody>` +
+      cand.map(c => `<tr class="${c === opt ? "front" : ""}"><td>${PREC_NAME[c.d.precision]}</td><td>${c.d.mmlu.toFixed(1)}</td><td>${c.drop.toFixed(1)}</td>` +
+        `<td>${c.allowed ? "yes" : "no"}</td><td>${lay(c.best)}</td><td>${fmt(c.best[5])}</td><td>${(c.best[5] / fpc.best[5]).toFixed(2)}×</td></tr>`).join("") + `</tbody>`;
+  }
+  Q.model.addEventListener("change", () => { qfill(); qrender(); });
+  Q.mt.addEventListener("change", () => { qfill(); qrender(); });
+  Q.bs.addEventListener("change", qrender);
+  Q.d.addEventListener("input", qrender);
+  function qinit() {
+    fill(Q.model, uniq(DATA.filter(d => d.mmlu != null).map(d => d.model)));
+    qfill();
+    const mid = sel => { const o = [...sel.options]; if (o.length) sel.value = o[Math.floor(o.length / 2)].value; };
+    mid(Q.mt); qfill(); mid(Q.bs); qrender();
+  }
   // Resolve data/ against the page's folder: hosts that serve the page without a trailing
   // slash (e.g. .../energylens) would otherwise look one folder up.
   const base = /\/$|\.html?$/.test(location.pathname) ? "" : location.pathname.split("/").pop() + "/";
@@ -575,6 +650,7 @@ grid.groupby(["hardware", "model", "tensor_parallel_size", "pipeline_parallel_si
     const mid = sel => { const o = [...sel.options]; if (o.length) sel.value = o[Math.floor(o.length / 2)].value; };
     mid(F.mt); refreshWorkload(); mid(F.bs); refreshWorkload();
     render();
+    qinit();
   }).catch(() => { $("note").textContent = "Could not load the explorer data (data/site.js)."; });
 })();
 </script>
