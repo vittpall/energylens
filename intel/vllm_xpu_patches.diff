@@ -12,6 +12,59 @@ index 9c31da10d..fc7f11184 100644
  
          kernel = mk.FusedMoEKernel(
              MoEPrepareAndFinalizeNoDPEPModular(),
+diff --git a/vllm/model_executor/layers/quantization/awq_marlin.py b/vllm/model_executor/layers/quantization/awq_marlin.py
+index 426b9aa71..ce001bb5b 100644
+--- a/vllm/model_executor/layers/quantization/awq_marlin.py
++++ b/vllm/model_executor/layers/quantization/awq_marlin.py
+@@ -309,7 +309,7 @@ class AWQMarlinConfig(QuantizationConfig):
+         group_size = quant_config.get("group_size")
+         zero_point = quant_config.get("zero_point")
+ 
+-        if not current_platform.is_cuda_alike():
++        if not (current_platform.is_cuda_alike() or current_platform.is_xpu()):
+             return False
+ 
+         if quant_method != "awq":
+@@ -468,6 +468,21 @@ class AWQMarlinLinearMethod(LinearMethodBase):
+         _convert_awq_to_standard_format(
+             layer, "qweight", "qzeros", self.quant_config.quant_type.size_bits
+         )
++        if current_platform.is_xpu():
++            # XPUwNa16LinearKernel reads the compressed-tensors names and orientation: weight_packed
++            # (N, K/8), weight_scale (N, G), weight_zero_point (N/8, G) (it transposes scale and zero point
++            # itself). The converted AWQ tensors are (K/8, N), (G, N) and (N/8, G). Re-register them and drop
++            # the originals, so the weights are not held twice.
++            for name, value in (
++                ("weight_packed", layer.qweight.data.t().contiguous()),
++                ("weight_scale", layer.scales.data.t().contiguous()),
++                ("weight_zero_point", layer.qzeros.data),
++            ):
++                layer.register_parameter(name, Parameter(value, requires_grad=False))
++            del layer.qweight, layer.scales, layer.qzeros
++            self.kernel.w_q_name = "weight_packed"
++            self.kernel.w_s_name = "weight_scale"
++            self.kernel.w_zp_name = "weight_zero_point"
+         self.kernel.process_weights_after_loading(layer)
+ 
+     def apply(
+diff --git a/vllm/model_executor/layers/quantization/utils/marlin_utils.py b/vllm/model_executor/layers/quantization/utils/marlin_utils.py
+index d659effd7..7221c3c20 100644
+--- a/vllm/model_executor/layers/quantization/utils/marlin_utils.py
++++ b/vllm/model_executor/layers/quantization/utils/marlin_utils.py
+@@ -112,6 +112,13 @@ def _check_marlin_supported(
+     has_zp: bool,
+     device_capability: int | None = None,
+ ) -> tuple[bool, str | None]:
++    if current_platform.is_xpu():
++        # Not Marlin (CUDA only): the "marlin" quantization configs reach the XPUwNa16 MPLinearKernel, which
++        # takes 4-bit weights, uint4 (with zero points) or uint4b8, in groups that are a multiple of 32.
++        ok = quant_type in (scalar_types.uint4, scalar_types.uint4b8) and (
++            group_size in (None, -1) or group_size % 32 == 0
++        )
++        return ok, None if ok else f"XPUwNa16 does not support {quant_type}, group_size={group_size}"
+     if device_capability is None:
+         capability_tuple = current_platform.get_device_capability()
+         device_capability = (
 diff --git a/vllm/platforms/xpu.py b/vllm/platforms/xpu.py
 index 5d39dfceb..d40a93a37 100644
 --- a/vllm/platforms/xpu.py

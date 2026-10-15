@@ -28,7 +28,11 @@ AURORA = [("Mistral-7B", "text", "text_only_Mistral-7B-Instruct-v0.3_fp16"),
           ("Qwen2.5-14B", "text", "text_only_Qwen2.5-14B-Instruct_fp16"),
           ("Qwen1.5-MoE", "text", "text_only_Qwen1.5-MoE-A2.7B_fp16"),
           ("Qwen2-VL-7B", "image", "text_image_Qwen2-VL-7B-Instruct_fp16"),
-          ("Mamba-Codestral-7B", "text", "text_only_Mamba-Codestral-7B-v0.1_fp16")]
+          ("Mamba-Codestral-7B", "text", "text_only_Mamba-Codestral-7B-v0.1_fp16"),
+          ("Llama-3.1-8B", "text", "text_only_Llama-3.1-8B-Instruct_bnb4bit", "bnb4bit"),
+          ("Llama-3.1-8B", "text", "text_only_Meta-Llama-3.1-8B-Instruct-AWQ-INT4_awq4bit", "awq4bit"),
+          ("Qwen2.5-14B", "text", "text_only_Qwen2.5-14B-Instruct_bnb4bit", "bnb4bit"),
+          ("Qwen2.5-14B", "text", "text_only_Qwen2.5-14B-Instruct-AWQ_awq4bit", "awq4bit")]
 INLEN = [("Llama-3.1-8B", "Llama-3.1-8B-Instruct"), ("Qwen2.5-14B", "Qwen2.5-14B-Instruct")]
 KEYS = ["max_tokens", "batch_size", "tp_degree", "pp_degree", "budget"]
 
@@ -68,9 +72,9 @@ def main():
             p = os.path.join(nv, "results_zeus_inlen", f"run_text_only_{run}_fp16", f"in{n}", "profiling_metrics.csv")
             if os.path.exists(p):
                 out.append(entry("A100", model, f"text, {n}-token prompts", "fp16", p, True))
-    for model, mod, run in AURORA:
+    for model, mod, run, *prec in AURORA:
         p = os.path.join(ROOT, "intel", "results_aurora", f"run_{run}", "res_native", "profiling_metrics.csv")
-        out.append(entry("Max 1550", model, mod, "fp16", p, False))
+        out.append(entry("Max 1550", model, mod, prec[0] if prec else "fp16", p, False))
     meta = {"columns": ["max_tokens", "batch_size", "tp", "pp", "budget", "energy_J_per_request",
                         "latency_s", "power_W", "energylens_pred_J_per_request"],
             "datasets": out}
