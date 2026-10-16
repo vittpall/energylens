@@ -103,6 +103,7 @@ Run the scripts from `nvidia/` unless noted otherwise. Outputs go to `nvidia/res
 | MaverIQ reimplementation check | `python test/maveriq_reproduction.py` |
 | Characterization figures (TP/PP, power, Pareto) | `python viz/characterization.py` |
 | Ablation of the template's terms | `python test/ablation.py` |
+| Fitted-parameter stability; log-linear and log-feature Gradient Boosting baselines | `python test/phi_and_baselines.py` |
 | Evaluation figures | `python viz/evaluation.py` |
 | Profiling cost: random vs D-optimal designs, equal-cost comparison with MaverIQ | `cd adaptive_sampling && python run.py --all && python profiling_cost.py && python equal_cost.py` |
 | Symbolic-regression search for the template | `python sr_training.py --help` (needs PySR) |
