@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""Cross-model baseline comparison: EnergyLens vs ML baselines vs MaverIQ"""
+"""
+Cross-model baseline comparison: EnergyLens vs ML baselines vs MaverIQ
+========================================================================
+Reproduces the paper tables:
+  - Table 1: MAPE / R² / RMSE at n_train=50 and n_train=500 per dataset
+  - Table 2: MAPE / R² at n_train=50 across all hardware-model combinations
+
+Per seed, a fixed test set (--test-frac of the rows, default 0.2) is held out;
+every method is fit on the same n_train rows drawn from the remaining pool and
+scored only on the held-out rows. --test-frac 0 restores the old behaviour
+(score on the full dataset, training rows included).
+"""
 
 DATASETS = {
     # ── NVIDIA A100 (results/) ──
@@ -646,7 +657,7 @@ def plot_learning_summary(records, output_dir):
                 ls='-' if method in ('EnergyLens (Ours)', 'MaverIQ (Lat×P)') else '--')
         ax.fill_between(ns, q1.loc[ns], q3.loc[ns], color=color, alpha=0.12, lw=0)
     ax.set_xlabel('Training samples (n_train)', fontsize=LC_LABEL_SIZE)
-    ax.set_ylabel(f'MAPE (%), median of {n_ds} datasets', fontsize=LC_LABEL_SIZE)
+    ax.set_ylabel('MAPE (%)', fontsize=LC_LABEL_SIZE)
     ax.set_xscale('log')
     labelled = []
     for n in ns:

@@ -3,6 +3,17 @@
 
     python viz/characterization.py --out ../../PDP-paper/images/characterization   # from nvidia/
     python viz/characterization.py --only tp_pp batch                               # a subset
+
+  tp_pp_vs_latency_avg / tp_pp_vs_energy_avg   every text-only model vs (TP, PP)
+  energy_latency_optimum                        extra energy of the latency-optimal choice, per dataset
+  batch_size_vs_energy                          (a) all models vs batch size, (b) one model per (TP, PP)
+  modality_energy                               text vs image vs video, per (TP, PP)
+  fits (CSV only)                               MaverIQ's latency form and EnergyLens' TP/PP terms
+                                                fitted to the same data (numbers for Sec. V.B.2)
+
+Each figure also writes a CSV of the plotted values next to it, which is where
+the numbers quoted in the text come from. Colour = model, marker and line style
+= architecture family (viz/style.py); datasets come from viz/datasets.py.
 """
 import argparse
 import os
@@ -46,8 +57,8 @@ def tp_pp(out):
     ds = _by_family(select("text", models=None))
     ds = [d for d in ds if d.model not in ("Qwen2-VL-7B", "LLaVA-1.5-7B")]   # multimodal: see modality_energy
     rows = []
-    for col, ylabel, name in (("measured_latency", "Average Batch Latency (s)", "tp_pp_vs_latency_avg"),
-                              ("measured_energy", "Average Energy per Request (J)", "tp_pp_vs_energy_avg")):
+    for col, ylabel, name in (("measured_latency", "Batch latency (s)", "tp_pp_vs_latency_avg"),
+                              ("measured_energy", "Energy per request (J)", "tp_pp_vs_energy_avg")):
         fig, ax = plt.subplots(figsize=(11, 7.5))
         x = _tp_pp_axis(ax)
         for d in ds:
@@ -142,9 +153,10 @@ def batch(out, detail_model="Qwen2-VL-7B"):
     a.set_xscale("log")
     a.set_yscale("log")
     a.axvline(64, color="#555555", linestyle=":", linewidth=1)
-    a.text(66, a.get_ylim()[0] * 1.3, "concurrency\nlimit S=64", fontsize=LEGEND_SIZE - 1, color="#555555")
-    style(a, "Batch Size (requests)", "Average Energy per Request (J)")
-    a.legend(fontsize=LEGEND_SIZE - 2, framealpha=0.9, ncol=2, loc="upper right")
+    a.text(70, a.get_ylim()[1] / 1.6, "concurrency\nlimit S=64", fontsize=LEGEND_SIZE - 1, color="#555555", va="top")
+    style(a, "Batch Size (requests)", "Energy per request (J)")
+    a.legend(fontsize=LEGEND_SIZE - 3, framealpha=0.9, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.2),
+             columnspacing=0.8, handlelength=2.2)
     a.set_title("(a) All models, fewest-GPU configuration", fontsize=LABEL_SIZE)
 
     d = get(detail_model)
@@ -156,7 +168,7 @@ def batch(out, detail_model="Qwen2-VL-7B"):
                markeredgecolor="white", markeredgewidth=0.8)
     b.set_xscale("log")
     b.set_yscale("log")
-    style(b, "Batch Size (requests)", "Average Energy per Request (J)")
+    style(b, "Batch Size (requests)", "Energy per request (J)")
     b.legend(fontsize=LEGEND_SIZE - 1, framealpha=0.9, title="(TP, PP)", ncol=2)
     b.set_title(f"(b) {detail_model}, every configuration", fontsize=LABEL_SIZE)
     save(fig, out, "batch_size_vs_energy")
@@ -365,7 +377,7 @@ def power(out, pareto_model="Qwen2.5-14B"):
     the layout's power per GPU: the fastest layout draws the most power and is not the cheapest."""
     plt.rcParams.update({"axes.titlesize": 19, "axes.labelsize": 18, "xtick.labelsize": 16,
                          "ytick.labelsize": 16, "legend.fontsize": 14, "font.size": 15})
-    fig, (a, c, b) = plt.subplots(1, 3, figsize=(17, 5.2))
+    fig, (a, c, b) = plt.subplots(1, 3, figsize=(17, 6.0))
     bins = np.unique(np.round(np.geomspace(1, 512, 12)))
     colors = {"Qwen2-VL-7B": "#1f77b4", "LLaVA-1.5-7B": "#d62728"}
     rows = []
@@ -385,9 +397,9 @@ def power(out, pareto_model="Qwen2.5-14B"):
     a.set_xscale("log", base=2)
     a.set_ylim(0, A100_TDP * 1.15)
     a.set_xlabel("Batch size (requests)")
-    a.set_ylabel("Power per GPU (W)")
+    a.set_ylabel("Power/GPU (W)")
     a.set_title("(a) One A100, by input type")
-    a.legend(fontsize=13, ncol=2, loc="lower right")
+    a.legend(fontsize=10.5, ncol=2, loc="lower right", columnspacing=0.8, handlelength=2.0)
 
     # (b) ML.ENERGY Fig. 5a style: total power of the multi-GPU layouts against the server's TDP
     for model, mod, n, color in (("Qwen2.5-32B", "text", 4, "#2ca02c"), ("InternVL2-76B", "image", 8, "#9467bd")):
@@ -404,14 +416,15 @@ def power(out, pareto_model="Qwen2.5-14B"):
             rows += [{"panel": "b", "model": model, "tp": tp, "pp": pp, "batch": x, "power_w": y}
                      for x, y in zip(k.x, k.y)]
         c.axhline(n * A100_TDP, color=color, ls="--", lw=1.2)
-        c.text(2, n * A100_TDP + (40 if n == 8 else -40), f"{n} x A100 TDP (max power draw)", color=color, fontsize=15,
+        c.text(1.9, n * A100_TDP + (40 if n == 8 else -40), f"{n} x A100 TDP (max power draw)", color=color, fontsize=13,
                va="bottom" if n == 8 else "top")
     c.set_xscale("log", base=2)
     c.set_ylim(0, 8 * A100_TDP * 1.12)
     c.set_xlabel("Batch size (requests)")
     c.set_ylabel("Total power draw (W)")
     c.set_title("(b) Multi-GPU layouts vs. server TDP")
-    c.legend(fontsize=12.5, loc="center right")
+    c.legend(fontsize=10, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.22), handlelength=2.0,
+             columnspacing=0.8, frameon=False)
 
     # (b) ML.ENERGY Fig. 7 style: every configuration (layout x batch size) of one prompt/output length
     df = get(pareto_model, "text").load()
