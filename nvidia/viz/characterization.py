@@ -377,7 +377,7 @@ def power(out, pareto_model="Qwen2.5-14B"):
     the layout's power per GPU: the fastest layout draws the most power and is not the cheapest."""
     plt.rcParams.update({"axes.titlesize": 19, "axes.labelsize": 18, "xtick.labelsize": 16,
                          "ytick.labelsize": 16, "legend.fontsize": 14, "font.size": 15})
-    fig, (a, c, b) = plt.subplots(1, 3, figsize=(17, 5.6))
+    fig, (a, c, b) = plt.subplots(1, 3, figsize=(17, 6.0))
     bins = np.unique(np.round(np.geomspace(1, 512, 12)))
     colors = {"Qwen2-VL-7B": "#1f77b4", "LLaVA-1.5-7B": "#d62728"}
     rows = []

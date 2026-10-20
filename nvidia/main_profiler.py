@@ -256,6 +256,9 @@ def parse_args():
                     help="vLLM max_model_len (default 4096; 8192 with --trace)")
     ap.add_argument("--output-root", default=None,
                     help="default ./results_zeus (./results_zeus_trace with --trace)")
+    ap.add_argument("--min-gpus", type=int, default=1,
+                    help="skip layouts with TP*PP below this (e.g. 8 profiles only the 8-GPU layouts of "
+                         "--tp 1 2 4 8 --pp 1 2 4 8, into a separate --output-root)")
     ap.add_argument("--input-lengths", type=int, nargs="+", default=None,
                     help="text only: sweep prompt length (tokens per request) as a grid "
                          "dimension, e.g. 128 512 2048 4096. Prefix caching is turned off; "
@@ -393,6 +396,11 @@ def main():
           + (f"  input lengths {lengths}, max_model_len {max_model_len}" if lengths else ""))
     print(f"TP={args.tp}  PP={args.pp}  budgets={budgets}  max_tokens={args.max_tokens}  "
           f"precision={quant_tag}")
+    if args.min_gpus > 1:
+        loader.heavy_configs = [c for c in loader.heavy_configs
+                                if c["tensor_parallel_size"] * c["pipeline_parallel_size"] >= args.min_gpus]
+        print(f"--min-gpus {args.min_gpus}: keeping layouts with TP*PP >= {args.min_gpus}: "
+              f"{sorted({(c['tensor_parallel_size'], c['pipeline_parallel_size']) for c in loader.heavy_configs})}")
     print(f"Generated {len(loader.heavy_configs)} heavy × {len(loader.light_configs)} light configs")
     print(f"Resolutions to sweep: {resolutions}" if not lengths else f"Input lengths: {lengths}")
     print(f"Output: {BASE_OUTPUT_DIR}")

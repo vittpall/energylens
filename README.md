@@ -59,7 +59,8 @@ runs offline:
 |---|---|
 | `nvidia/results_zeus/` | A100 grids: 18 model/modality/precision runs (dense, MoE, state-space, hybrid; text, image, video; FP16, bitsandbytes NF4, AWQ, GPTQ, W8A8) |
 | `nvidia/results_zeus_maxgen/` | Re-profiled multimodal grids that also record the longest output per batch |
-| `nvidia/results_zeus_inlen/` | Llama-3.1-8B over input length |
+| `nvidia/results_zeus_inlen/` | Five dense models over input length (prompts of 128 to 4,096 tokens; `in_all` merges them) |
+| `nvidia/results_zeus_8gpu/` | The four 8-GPU layouts (1x8, 2x4, 4x2, 8x1) of Llama-3.1-8B, Mistral-7B, Qwen2.5-14B and Qwen2.5-32B |
 | `nvidia/results_zeus_trace/` | Real Azure request batches (held-out evaluation) |
 | `nvidia/results_zeus_online/`, `nvidia/results_zeus_online_day/` | Live replay of Azure traffic against every layout (60 s pilot and one-day replay) |
 | `intel/results_aurora/` | Intel GPU Max 1550 grids (one rank per tile) |
@@ -104,6 +105,9 @@ Run the scripts from `nvidia/` unless noted otherwise. Outputs go to `nvidia/res
 | Characterization figures (TP/PP, power, Pareto) | `python viz/characterization.py` |
 | Ablation of the template's terms | `python test/ablation.py` |
 | Fitted-parameter stability; log-linear and log-feature Gradient Boosting baselines | `python test/phi_and_baselines.py` |
+| Layout choice without and with a latency limit, including the "fewest GPUs, then TP" rule | `python test/selection_baselines.py --with-rule` |
+| Fit on at most 4 GPUs, predict the 8-GPU layouts | `python test/gpu8_extrapolation.py` |
+| Gaussian-process and two-stage (latency x power) baselines | `python test/more_baselines.py`, `python test/more_baselines_extrap.py` |
 | Evaluation figures | `python viz/evaluation.py` |
 | Profiling cost: random vs D-optimal designs, equal-cost comparison with MaverIQ | `cd adaptive_sampling && python run.py --all && python profiling_cost.py && python equal_cost.py` |
 | Symbolic-regression search for the template | `python sr_training.py --help` (needs PySR) |
