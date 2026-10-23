@@ -12,14 +12,6 @@ import pandas as pd
 METHODS = ["EnergyLens", "MaverIQ", "Gradient Boosting"]
 
 
-def rule_order(g):
-    """Fewest GPUs, then TP; among a layout's serving settings the default-like one
-    (concurrency limit 128, token budget 8192) first."""
-    g = g.assign(n=g.tp * g.pp)
-    if "seqs" in g:
-        g = g.assign(_d=~((g.seqs == 128) & (g.budget == 8192)))
-        return g.sort_values(["n", "pp", "_d"])
-    return g.sort_values(["n", "pp"])
 
 
 def label(r):
@@ -52,9 +44,7 @@ def choose(g, k):
     ok = g.p90_e2e_s <= target + 1e-9
     feas = g[ok]
     out = {"oracle": feas.loc[feas.energy.idxmin()],
-           "fastest": g.loc[g.p90_e2e_s.idxmin()],
-           "fewest GPUs, then TP": rule_order(g).iloc[0],
-           "fewest GPUs, then TP (meas. feas.)": rule_order(feas).iloc[0]}
+           "fastest": g.loc[g.p90_e2e_s.idxmin()]}
     for m in METHODS:
         if m not in g:
             continue

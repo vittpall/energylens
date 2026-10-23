@@ -5,7 +5,7 @@ Configuration selection vs simple rules, where the choice is and is not trivial.
 Per held-out scenario (max_tokens, batch_size) each method picks a (TP, PP):
   unconstrained     any configuration
   fixed GPU count   only layouts with the same TP x PP (2 GPUs: (1,2)/(2,1);
-                    4 GPUs: (1,4)/(2,2)/(4,1)) — "fewest GPUs" cannot decide here
+                    4 GPUs: (1,4)/(2,2)/(4,1)) — only layouts with that count compete
   SLO               the lowest-energy configuration whose latency is at most
                     k x the scenario's fastest configuration (--slo k ...), or,
                     as in MaverIQ/Proteus, k x the latency of the configuration
@@ -20,8 +20,7 @@ Per held-out scenario (max_tokens, batch_size) each method picks a (TP, PP):
                                            limit is a violation
 Models (EnergyLens, MaverIQ, Gradient Boosting) are fit on the same n training
 rows from the training scenarios (pairwise_ranking.py's fitters). Rules need no
-fit; the "measured" ones read the held-out latency, so they are oracles. The
-"fewest GPUs, then TP" rule is left out unless --with-rule is given.
+fit; the "measured" ones read the held-out latency, so they are oracles.
 
     python test/selection_baselines.py --datasets "Label=path.csv" ... --n-train 50 0
 """
@@ -41,14 +40,13 @@ KNOWN, PREDICTED = 'SLO, known feasibility', 'SLO, predicted feasibility'
 MINPAR = ' (min-parallelism base)'
 
 
-def fewest_gpus(x):
+def min_parallelism(x):
     return x.sort_values(['gpus', 'pp_degree']).index[0]
 
 
-def rules(x, with_rule=False):
+def rules(x):
     """Picks (row labels of x) of rules that need no fitted model."""
     return {
-        **({'fewest GPUs, then TP': fewest_gpus(x)} if with_rule else {}),
         'max parallelism': x.sort_values(['gpus', 'pp_degree'], ascending=[False, True]).index[0],
         'prefer TP': x.sort_values(['tp_degree', 'pp_degree'], ascending=[False, True]).index[0],
         'prefer PP (Accelerate: layers over all GPUs)':
@@ -70,7 +68,7 @@ def per_config(test, preds, pred_lat):
     return agg
 
 
-def evaluate(agg, methods, setting, with_rule=False):
+def evaluate(agg, methods, setting):
     """Top-1 / regret over the choice sets of the unconstrained or fixed-GPU setting."""
     keys = SCEN + (['gpus'] if setting == 'fixed GPU count' else [])
     out = []
@@ -79,14 +77,14 @@ def evaluate(agg, methods, setting, with_rule=False):
             continue
         y, best = x.measured_energy, x.measured_energy.min()
         picks = {m: (x[f'p_{m}'].idxmin() if x[f'p_{m}'].notna().any() else x.lat.idxmin()) for m in methods}
-        picks.update(rules(x, with_rule))
+        picks.update(rules(x))
         for m, i in picks.items():
             out.append({'setting': setting, 'k': '-', 'method': m, 'top1': float(y[i] == best),
                         'regret': (y[i] - best) / best * 100, 'violation': 0.0})
     return out
 
 
-def evaluate_slo(agg, methods, ks, keys=SCEN, with_rule=False, base='fastest'):
+def evaluate_slo(agg, methods, ks, keys=SCEN, base='fastest'):
     """Lowest energy under a latency limit, with known or predicted feasibility.
     agg: one row per (scenario, config) with lat (measured), plat (predicted),
     gpus, measured_energy and p_<method> energy predictions. base: 'fastest'
@@ -96,7 +94,7 @@ def evaluate_slo(agg, methods, ks, keys=SCEN, with_rule=False, base='fastest'):
     for _, x in agg.groupby(keys):
         if len(x) < 2:
             continue
-        ref = x.lat.min() if base == 'fastest' else x.lat[fewest_gpus(x)]
+        ref = x.lat.min() if base == 'fastest' else x.lat[min_parallelism(x)]
         for k in ks:
             slo = k * ref
             feasible = x.lat <= slo
@@ -107,8 +105,6 @@ def evaluate_slo(agg, methods, ks, keys=SCEN, with_rule=False, base='fastest'):
                 ok = lat <= slo
                 c = x[ok] if ok.any() else x.loc[[lat.idxmin()]]
                 picks = {m: (c[f'p_{m}'].idxmin() if c[f'p_{m}'].notna().any() else lat.idxmin()) for m in methods}
-                if with_rule:
-                    picks['fewest GPUs, then TP'] = fewest_gpus(c)
                 picks['fastest'] = lat.idxmin()
                 picks['predicted latency x GPUs (AlpaServe-style throughput)'] = (c.plat * c.gpus).idxmin()
                 if mode == KNOWN:
@@ -146,7 +142,7 @@ def lookup_predict(train, test):
     return out
 
 
-def run(name, path, n_train, seed, ks, with_rule=False, ks_minpar=()):
+def run(name, path, n_train, seed, ks, ks_minpar=()):
     df = prepare_df(pd.read_csv(path), path)
     train, test, n_test, _ = holdout_scenarios(df, 0.3, seed)
     if n_test == 0:
@@ -163,10 +159,10 @@ def run(name, path, n_train, seed, ks, with_rule=False, ks_minpar=()):
     y = test['measured_latency'].values
     print(f'    latency MAPE on held-out rows: {100 * np.mean(np.abs(plat - y) / y):.1f}%', flush=True)
     agg = per_config(test, preds, plat)
-    rows = (evaluate(agg, preds, 'unconstrained', with_rule)
-            + evaluate(agg, preds, 'fixed GPU count', with_rule))
-    rows += evaluate_slo(agg, preds, ks, with_rule=with_rule)
-    rows += evaluate_slo(agg, preds, ks_minpar, with_rule=with_rule, base='minpar')
+    rows = (evaluate(agg, preds, 'unconstrained')
+            + evaluate(agg, preds, 'fixed GPU count'))
+    rows += evaluate_slo(agg, preds, ks)
+    rows += evaluate_slo(agg, preds, ks_minpar, base='minpar')
     return [{'dataset': name, 'n_train': n_train or 'all', 'seed': seed, **r} for r in rows]
 
 
@@ -180,8 +176,6 @@ def main():
     ap.add_argument('--slo-minpar', type=float, nargs='*', default=[2.5, 5.0, 7.5],
                     help='latency limits as multiples of the minimum-parallelism configuration '
                          '(MaverIQ/Proteus definition)')
-    ap.add_argument('--with-rule', action='store_true',
-                    help="include the 'fewest GPUs, then TP' rule")
     ap.add_argument('--output-dir', default='results_figures')
     args = ap.parse_args()
     datasets = {k: v for k, v in resolve_datasets(args.datasets, DATASETS).items() if os.path.isfile(v)}
@@ -191,7 +185,7 @@ def main():
         for n in args.n_train:
             for seed in args.seeds:
                 print(f'  {name}  n_train={n or "all"}  seed={seed}', flush=True)
-                rows += run(name, path, n, seed, args.slo, args.with_rule, args.slo_minpar)
+                rows += run(name, path, n, seed, args.slo, args.slo_minpar)
     r = pd.DataFrame(rows)
     r['n_train'] = r['n_train'].astype(str)
     r['k'] = r['k'].astype(str)

@@ -28,11 +28,7 @@ MAX_SEQS = 64
 KNOWN, PREDICTED = 'SLO, known feasibility', 'SLO, predicted feasibility'
 
 
-def fewest_gpus(x):
-    return x.sort_values(['gpus', 'pp_degree']).index[0]
-
-
-def evaluate_slo(agg, methods, ks, keys=('max_tokens', 'batch_size'), with_rule=False):
+def evaluate_slo(agg, methods, ks, keys=('max_tokens', 'batch_size')):
     """Lowest energy under a latency limit (k x the fastest configuration), with known or
     predicted feasibility. agg: one row per (scenario, config) with lat (measured), plat
     (predicted), gpus, measured_energy and p_<method> energy predictions."""
@@ -49,8 +45,6 @@ def evaluate_slo(agg, methods, ks, keys=('max_tokens', 'batch_size'), with_rule=
                 ok = lat <= slo
                 c = x[ok] if ok.any() else x.loc[[lat.idxmin()]]
                 picks = {m: (c[f'p_{m}'].idxmin() if c[f'p_{m}'].notna().any() else lat.idxmin()) for m in methods}
-                if with_rule:
-                    picks['fewest GPUs, then TP'] = fewest_gpus(c)
                 picks['fastest'] = lat.idxmin()
                 for m, i in picks.items():
                     viol = bool(x.lat[i] > slo)
@@ -175,8 +169,8 @@ def slo(pred, methods, ks):
         agg = pred.assign(lat=pred["p90_e2e_s"], plat=pred[f"lat_{m}"], gpus=pred["tp"] * pred["pp"],
                           measured_energy=pred["energy"], tp_degree=pred["tp"], pp_degree=pred["pp"],
                           **{f"p_{m}": pred[m]})
-        for r in evaluate_slo(agg, [m], ks, keys=["window_id"], with_rule=(m == methods[0])):
-            if r["method"] in (m, "fewest GPUs, then TP", "fastest") or "latency x GPUs" in r["method"]:
+        for r in evaluate_slo(agg, [m], ks, keys=["window_id"]):
+            if r["method"] in (m, "fastest") or "latency x GPUs" in r["method"]:
                 rows.append(r)
     out = pd.DataFrame(rows).drop_duplicates()
     return (out.groupby(["setting", "k", "method"])[["top1", "regret", "violation", "binds"]]
@@ -204,7 +198,6 @@ def main():
     for line in req_file:
         j = json.loads(line)
         reqs[(j["cfg"], j["window_id"])] = j["requests"]
-    rule = online.assign(g=online.tensor_parallel_size * online.pipeline_parallel_size)
     online["J_per_req"] = online["energy"] / online["n_requests"]
     print(online.groupby(["trace", "rate", "tensor_parallel_size", "pipeline_parallel_size"])
           [["J_per_req", "mean_in_flight", "duration_s", "idle_power"]].mean().round(1).to_string())
@@ -234,10 +227,6 @@ def main():
                 rows.append({"train": name, "load": load, "method": m,
                              "mape": 100 * np.mean(np.abs(p[m] - p["energy"]) / p["energy"]),
                              **rk[m]})
-    # the no-model rule: fewest GPUs, then TP
-    r = rule.assign(score=rule["g"] * 10 + rule["pipeline_parallel_size"])
-    rk = ranking(r.assign(rule=r["score"].astype(float)), ["rule"])["rule"]
-    rows.append({"train": "-", "load": "-", "method": "fewest GPUs, then TP", "mape": np.nan, **rk})
 
     summary = pd.DataFrame(rows)
     summary.to_csv(os.path.join(out_dir, "online_eval_summary.csv"), index=False)

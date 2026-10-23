@@ -61,19 +61,14 @@ def fixed_gpu(c):
 
 
 def slo(c, k):
-    reg, rule_breaks, rule_reg = [], [], []
+    reg = []
     for _, g in c.groupby(SCEN):
         if len(g) < 2:
             continue
         f = g[g.lat <= k * g.lat.min() + 1e-12]
         best = f.y.min()
         reg.append(100 * (f.y.to_numpy()[f.p.to_numpy().argmin()] / best - 1))
-        rule = g.sort_values(["n", "pp_degree"]).iloc[0]
-        rule_breaks.append(rule.lat > k * g.lat.min() + 1e-12)
-        rf = f.sort_values(["n", "pp_degree"]).iloc[0]            # fewest GPUs among the compliant
-        rule_reg.append(100 * (rf.y / best - 1))
-    return {f"slo{k}_regret": np.mean(reg), f"slo{k}_rule_breaks": 100 * np.mean(rule_breaks),
-            f"slo{k}_rule_regret": np.mean(rule_reg)}
+    return {f"slo{k}_regret": np.mean(reg)}
 
 
 def score(test, pred):
@@ -152,7 +147,7 @@ def main():
                 print(f"saved {rows[0]['dataset']} seed {rows[0]['seed']}", flush=True)
     r = pd.read_csv(path)
     cols = ["gpu_hours", "minutes", "engines", "mape", "pairwise", "top1", "regret", "fixed_pairwise",
-            "fixed_regret", "slo1.5_regret", "slo2.0_regret", "slo2.0_rule_regret", "slo2.0_rule_breaks"]
+            "fixed_regret", "slo1.5_regret", "slo2.0_regret"]
     pd.set_option("display.width", 250)
     per_ds = r.groupby(["method", "n", "dataset"])[cols].mean()
     print(f"{r.dataset.nunique()} datasets x {r.seed.nunique()} seeds; mean over datasets")

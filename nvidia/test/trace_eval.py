@@ -16,9 +16,6 @@ from pairwise_ranking import (prepare_df, fit_unified, unified_predict, fit_mave
 from online_eval import evaluate_slo
 from compare_cross_model import drop_invalid_rows
 
-RULE = 'fewest GPUs, then TP'
-
-
 def load_trace(path):
     raw = pd.read_csv(path)
     raw = raw[pd.to_numeric(raw['energy'], errors='coerce') > 0].reset_index(drop=True)
@@ -38,7 +35,7 @@ def predict(train, test):
     return preds
 
 
-def score_slo(test, preds, plat, ks, with_rule):
+def score_slo(test, preds, plat, ks):
     agg = test.assign(lat=test['measured_latency'], plat=plat,
                       gpus=test['tp_degree'] * test['pp_degree'],
                       **{f'p_{m}': p for m, p in preds.items()})
@@ -48,11 +45,11 @@ def score_slo(test, preds, plat, ks, with_rule):
               'value': lat_mape}]
             + [{'setting': r['setting'], 'k': r['k'], 'method': r['method'], 'metric': c,
                 'value': r[c] * (100 if c != 'regret' else 1)}
-               for r in evaluate_slo(agg, preds, ks, keys=['batch_id'], with_rule=with_rule)
+               for r in evaluate_slo(agg, preds, ks, keys=['batch_id'])
                for c in ('top1', 'regret', 'violation')])
 
 
-def score(test, preds, with_rule):
+def score(test, preds):
     y = test['measured_energy'].values
     out = [{'method': m, 'metric': 'mape', 'value': 100 * np.mean(np.abs(p - y) / y)}
            for m, p in preds.items()]
@@ -62,18 +59,15 @@ def score(test, preds, with_rule):
                  'value': 100 * np.mean(np.abs(p[sel] - y[sel]) / y[sel])} for m, p in preds.items()]
     rank = []
     gpus = (test['tp_degree'] * test['pp_degree']).values
-    rule = np.lexsort((test['pp_degree'].values, gpus)).argsort().astype(float)
     for _, idx in test.groupby('batch_id').indices.items():
         labels = list(zip(test['tp_degree'].values[idx], test['pp_degree'].values[idx]))
         p = {m: v[idx] for m, v in preds.items()}
-        if with_rule:
-            p[RULE] = rule[idx]
         for m, r in compute_pairwise_metrics(y[idx], p, labels).items():
             rank.append({'method': m, 'pairwise': 100 * r['pairwise_acc'],
                          'top1': 100 * r['top1_correct'], 'regret': r['regret_pct']})
     rank = pd.DataFrame(rank).groupby('method').mean()
     out += [{'method': m, 'metric': c, 'value': rank.loc[m, c]}
-            for m in rank.index for c in rank.columns if not (m == RULE and c == 'pairwise')]
+            for m in rank.index for c in rank.columns]
     return out
 
 
@@ -88,8 +82,6 @@ def main():
                     help='also fit grid + k trace with the trace rows up-weighted to the grid size')
     ap.add_argument('--slo', type=float, nargs='+', default=[1.1, 1.25, 1.5, 2.0],
                     help='latency limits as multiples of the batch\'s fastest layout')
-    ap.add_argument('--with-rule', action='store_true',
-                    help="include the 'fewest GPUs, then TP' rule")
     ap.add_argument('--seeds', type=int, nargs='+', default=[42, 7, 123])
     ap.add_argument('--output-dir', default='results_figures')
     args = ap.parse_args()
@@ -119,10 +111,9 @@ def main():
         for name, train in runs.items():
             print(f'  seed {seed}: {name} ({len(train)} rows)', flush=True)
             preds = predict(train, test)
-            rows += [{'seed': seed, 'train': name, **r} for r in score(test, preds, args.with_rule)]
+            rows += [{'seed': seed, 'train': name, **r} for r in score(test, preds)]
             slo_rows += [{'seed': seed, 'train': name, **r}
-                         for r in score_slo(test, preds, fit_latency(train)(test),
-                                            args.slo, args.with_rule)]
+                         for r in score_slo(test, preds, fit_latency(train)(test), args.slo)]
 
     r = pd.DataFrame(rows)
     os.makedirs(args.output_dir, exist_ok=True)
