@@ -36,6 +36,9 @@ def panel(ax, r, metric, ylabel, log):
     if log:
         ax.set_yscale("log")
     style(ax, "Training rows", ylabel)
+    ax.xaxis.label.set_size(26)
+    ax.yaxis.label.set_size(26)
+    ax.tick_params(labelsize=24)
 
 
 def main():
@@ -45,7 +48,8 @@ def main():
     a.set_xlabel("")
     panel(b, r, "top1", "Top-1 accuracy (%)", log=False)
     b.set_ylim(0, 102)
-    a.legend(fontsize=LEGEND_SIZE - 2, loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=5, frameon=False)
+    a.legend(fontsize=LEGEND_SIZE + 3, loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=5, frameon=False,
+             columnspacing=0.8, handletextpad=0.2, handlelength=1.0)
     save(fig, os.path.join(NVIDIA, "results_figures", "evaluation"), "sample_efficiency_box")
 
 
