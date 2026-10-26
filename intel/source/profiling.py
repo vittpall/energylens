@@ -694,7 +694,7 @@ def _estimate_params_billion(arch_cfg, num_layers, hidden_size,
 
 
 def _accel():
-    """torch.cuda on NVIDIA, torch.xpu on Intel GPUs (Aurora)."""
+    """torch.cuda on NVIDIA, torch.xpu on Intel GPUs."""
     from .energy_intel import xpu_available
     return torch.xpu if xpu_available() else torch.cuda
 

@@ -3,7 +3,7 @@ import time
 
 try:
     import pynvml
-except Exception:  # no NVIDIA driver bindings (e.g. Intel GPUs on Aurora)
+except Exception:  # no NVIDIA driver bindings (e.g. Intel GPUs)
     pynvml = None
 
 from .energy_intel import (xpu_available, xpu_device_count, get_level_zero,
@@ -100,7 +100,7 @@ def _step_mean(samples, t0, t1):
     return total / span
 
 
-# Intel GPUs (Aurora): Zeus has no Intel backend, so energy comes from the Level
+# Intel GPUs: Zeus has no Intel backend, so energy comes from the Level
 # Zero Sysman energy counters instead (source/energy_intel.py), through the same
 # begin_window/end_window interface. Decided once per process.
 _INTEL = None

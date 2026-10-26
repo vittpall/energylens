@@ -7,7 +7,7 @@ import os
 import signal
 try:
     import pynvml
-except Exception:  # no NVIDIA bindings (Intel GPUs on Aurora)
+except Exception:  # no NVIDIA bindings (Intel GPUs)
     pynvml = None
 from contextlib import contextmanager
 import numpy as np
@@ -73,7 +73,7 @@ class Model:
         if kwargs.get("tensor_parallel_size", 1) > 1:
             kwargs.setdefault("disable_custom_all_reduce", True)
 
-        # Intel GPUs (Aurora): the vllm_intel build fails in torch.compile /
+        # Intel GPUs: the vllm_intel build fails in torch.compile /
         # graph capture, so run eager (model.pbs also sets TORCHDYNAMO_DISABLE=1,
         # since enforce_eager alone still compiles the vocab embedding ops).
         if xpu_available():

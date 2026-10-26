@@ -1,4 +1,4 @@
-"""GPU energy on Intel Data Center GPU Max (Aurora) from the Level Zero energy counters."""
+"""GPU energy on Intel Data Center GPU Max from the Level Zero energy counters."""
 import ctypes
 import os
 import threading
@@ -163,7 +163,7 @@ class LevelZeroEnergy:
         elif n_compute is not None and n_compute == n_cards and not mask:
             hierarchy = "composite"
         else:
-            hierarchy = "flat"          # Aurora's default
+            hierarchy = "flat"          # the Intel node's default
         units = self._all_units(hierarchy)
         if mask:                        # visible devices restricted by the mask
             vis = []

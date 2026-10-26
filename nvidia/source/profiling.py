@@ -689,7 +689,7 @@ def _estimate_params_billion(arch_cfg, num_layers, hidden_size,
 
 
 def _accel():
-    """torch.cuda on NVIDIA, torch.xpu on Intel GPUs (Aurora)."""
+    """torch.cuda on NVIDIA, torch.xpu on Intel GPUs."""
     from .energy_intel import xpu_available
     return torch.xpu if xpu_available() else torch.cuda
 
@@ -1203,6 +1203,10 @@ def _process_batch_and_write(
     except EngineHangError:
         # Engine deadlocked — unrecoverable in-process. Do not swallow: let it
         # propagate so the run aborts fast instead of hanging until walltime.
+        raise
+    except GPUContentionError:
+        # Includes EnergyCounterError: stop the run, the caller drops the
+        # config's partial rows so a resume redoes them.
         raise
     except Exception as e:
         if _engine_dead(e):

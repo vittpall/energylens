@@ -25,7 +25,7 @@ os.environ['TRANSFORMERS_TRUST_REMOTE_CODE'] = '1'
 # this flag for. Set both the CUDA-specific and backend-agnostic env names.
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
-# Intel GPUs (Aurora): Level Zero Sysman must be enabled before the first Level
+# Intel GPUs: Level Zero Sysman must be enabled before the first Level
 # Zero initialisation (torch.xpu / vLLM) for the energy counters in
 # source/energy_intel.py. Ignored on NVIDIA.
 os.environ.setdefault('ZES_ENABLE_SYSMAN', '1')

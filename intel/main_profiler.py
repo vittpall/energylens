@@ -1,4 +1,4 @@
-"""Entry point for the profiling pipeline with multi-modal support, on Aurora
+"""Entry point for the profiling pipeline with multi-modal support, on Intel GPUs
 
     python main_profiler.py --model Qwen/Qwen2.5-14B-Instruct --tp 1 2 4 --pp 1 2 3 4 6
     python main_profiler.py --model tiiuae/falcon-mamba-7b
@@ -24,12 +24,12 @@ os.environ['TRANSFORMERS_TRUST_REMOTE_CODE'] = '1'
 # vision encoder with ~966 MiB reserved-but-unallocated (fragmentation) while
 # trying to allocate 776 MiB contiguous — exactly the case PyTorch recommends
 # this flag for. Set both the CUDA-specific and backend-agnostic env names.
-# NVIDIA only: on Aurora it makes every TP>1 / PP>1 vLLM engine lose a worker to a
+# NVIDIA only: on Intel GPUs it makes every TP>1 / PP>1 vLLM engine lose a worker to a
 # GPU page fault ("Segmentation fault from GPU ... NotPresent").
 if os.environ.get('ENERGYLENS_BACKEND', '').lower() != 'intel':
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
-# Intel GPUs (Aurora): Level Zero Sysman must be enabled before the first Level
+# Intel GPUs: Level Zero Sysman must be enabled before the first Level
 # Zero initialisation (torch.xpu / vLLM) for the energy counters in
 # source/energy_intel.py. Ignored on NVIDIA.
 os.environ.setdefault('ZES_ENABLE_SYSMAN', '1')
@@ -257,7 +257,7 @@ def parse_args():
                     # be skipped. 4096 fits them.
                     help="vLLM max_model_len (default 4096; 8192 with --trace)")
     ap.add_argument("--output-root", default=None,
-                    help="default ./results_aurora (./results_aurora_trace with --trace)")
+                    help="default ./results_intel (./results_intel_trace with --trace)")
     ap.add_argument("--input-lengths", type=int, nargs="+", default=None,
                     help="text only: sweep prompt length (tokens per request) as a grid "
                          "dimension, e.g. 128 512 2048 4096. Prefix caching is turned off; "
@@ -281,7 +281,7 @@ def parse_args():
 # ════════════════════════════════════════════════════════════════════════
 
 def run_trace(args, quant, quant_tag):
-    out = f"{args.output_root or './results_aurora_trace'}/run_trace_{args.model.split('/')[-1]}_{quant_tag}"
+    out = f"{args.output_root or './results_intel_trace'}/run_trace_{args.model.split('/')[-1]}_{quant_tag}"
     _acquire_output_lock(out, force=args.force_lock)
     try:
         assert_gpus_exclusive("at job start")
@@ -318,7 +318,7 @@ def main():
     if lengths:
         budgets = args.budgets or MM_BUDGETS
     max_model_len = args.max_model_len or (max(lengths) + max(args.max_tokens) + 64 if lengths else 4096)
-    output_root = args.output_root or ("./results_aurora_inlen" if lengths else "./results_aurora")
+    output_root = args.output_root or ("./results_intel_inlen" if lengths else "./results_intel")
 
     heavy_defs = [
         {

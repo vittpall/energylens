@@ -23,7 +23,7 @@ QUANT = [("Llama-3.1-8B", "awq4bit", "Meta-Llama-3.1-8B-Instruct-AWQ-INT4_awq4bi
          ("Llama-3.1-8B", "bnb4bit", "Llama-3.1-8B-Instruct_bnb4bit"),
          ("Qwen2.5-14B", "awq4bit", "Qwen2.5-14B-Instruct-AWQ_awq4bit"),
          ("Qwen2.5-14B", "gptq8bit", "Qwen2.5-14B-Instruct-GPTQ-Int8_gptq8bit")]
-AURORA = [("Mistral-7B", "text", "text_only_Mistral-7B-Instruct-v0.3_fp16"),
+INTEL = [("Mistral-7B", "text", "text_only_Mistral-7B-Instruct-v0.3_fp16"),
           ("Llama-3.1-8B", "text", "text_only_Llama-3.1-8B-Instruct_fp16"),
           ("Qwen2.5-14B", "text", "text_only_Qwen2.5-14B-Instruct_fp16"),
           ("Qwen1.5-MoE", "text", "text_only_Qwen1.5-MoE-A2.7B_fp16"),
@@ -72,8 +72,8 @@ def main():
             p = os.path.join(nv, "results_zeus_inlen", f"run_text_only_{run}_fp16", f"in{n}", "profiling_metrics.csv")
             if os.path.exists(p):
                 out.append(entry("A100", model, f"text, {n}-token prompts", "fp16", p, True))
-    for model, mod, run, *prec in AURORA:
-        p = os.path.join(ROOT, "intel", "results_aurora", f"run_{run}", "res_native", "profiling_metrics.csv")
+    for model, mod, run, *prec in INTEL:
+        p = os.path.join(ROOT, "intel", "results_intel", f"run_{run}", "res_native", "profiling_metrics.csv")
         out.append(entry("Max 1550", model, mod, prec[0] if prec else "fp16", p, False))
     # MMLU (5-shot) per A100 checkpoint, and the layouts where vLLM 0.16 bitsandbytes gives correct output
     mmlu = {"Llama-3.1-8B": {"fp16": 68.4, "awq4bit": 66.4, "w8a8": 67.8},

@@ -7,7 +7,7 @@ import os
 import signal
 try:
     import pynvml
-except Exception:  # no NVIDIA bindings (Intel GPUs on Aurora)
+except Exception:  # no NVIDIA bindings (Intel GPUs)
     pynvml = None
 from contextlib import contextmanager
 import numpy as np
@@ -71,6 +71,35 @@ class Model:
         if kwargs.get("tensor_parallel_size", 1) > 1:
             kwargs.setdefault("disable_custom_all_reduce", True)
 
+        # Before vLLM's V1 engine (0.8) chunked prefill is off by default, and the
+        # budget sweep needs it (a budget below max_model_len is otherwise rejected).
+        # V1 chunks prefill always, so this reproduces its behaviour on older builds.
+        import vllm as _vllm
+        _ver = tuple(int(x) for x in _vllm.__version__.split(".")[:2] if x.isdigit())
+        if _ver < (0, 8):
+            kwargs.setdefault("enable_chunked_prefill", True)
+
+        # AMD MI100 (vLLM 0.6.3, RCCL over PCIe): with captured graphs a TP=2 engine
+        # returns the right first token and garbage afterwards; in eager mode its output
+        # matches TP=1 token for token (amd_setup/check_layout_output.py). Eager on every
+        # layout so that layouts are compared under the same execution mode. RCCL P2P
+        # across the two PCIe root complexes fails ("unhandled cuda error"), so it is off.
+        from .energy_amd import amd_available
+        if amd_available():
+            kwargs.setdefault("enforce_eager", True)
+            os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+
+        # ROCm on the MI100 node: the two GPUs sit on separate root complexes and
+        # RCCL's P2P/IPC transport fails ('invalid device pointer'), so collectives
+        # go through host shared memory. With HIP graphs those collectives return
+        # garbage text at TP=2 (eager output matches TP=1 token for token), so graphs
+        # are off on every layout to keep TP=1 and TP=2 on the same footing.
+        import torch as _torch
+        if getattr(_torch.version, "hip", None):
+            os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+            kwargs.setdefault("enforce_eager", True)
+            kwargs.setdefault("dtype", "float16")  # gfx908 has no bfloat16
+
         # GPUs this engine actually occupies. The job allocation is usually
         # larger, and vLLM ranks map onto the first tp*pp visible devices, so
         # energy must be measured over exactly these — measuring the whole
@@ -119,6 +148,17 @@ class Model:
         # Clean up GPU memory
         try:
             del self.llm
+        except Exception:
+            pass
+
+        # Older vLLM (0.6.x, the MI100 build) keeps its TP/PP groups after the
+        # engine is gone, so the next config with another TP size fails with
+        # "tensor parallel group already initialized". Tear them down explicitly.
+        try:
+            from vllm.distributed.parallel_state import (
+                destroy_model_parallel, destroy_distributed_environment)
+            destroy_model_parallel()
+            destroy_distributed_environment()
         except Exception:
             pass
 

@@ -12,7 +12,7 @@ its 12 parameters are fitted from about 50 measured batches, and the fitted form
 
 This repository contains:
 
-- the profiler that produced the measurements (NVIDIA through Zeus/NVML, Intel through Level Zero Sysman);
+- the profiler that produced the measurements (NVIDIA through Zeus/NVML, Intel through Level Zero Sysman, AMD through amdsmi);
 - every measured batch;
 - the scripts behind each table and figure;
 - the project page with an interactive explorer.
@@ -28,9 +28,11 @@ nvidia/                 A100 profiler, EnergyLens model, evaluation and figures
   test/                 evaluation scripts (one per table / experiment, see below)
   viz/                  paper figures; viz/datasets.py lists every dataset the figures use
   results_zeus*/        measured data (CSV), see "Data"
+docker/                 Dockerfile for the AMD MI100 build environment
+SETUP.md                environment setup for NVIDIA, Intel and AMD
 intel/                  Intel GPU Max 1550 profiler (same pipeline, XPU backend)
   vllm_xpu_patches.diff vLLM changes needed on Intel XPU
-  results_aurora/       measured data (CSV)
+  results_intel/       measured data (CSV)
 adaptive_sampling/      profiling-cost study: which and how many rows to measure (simulator, D-optimal design)
 data/
   build_dataset.py      exports all CSVs to Parquet for the Hugging Face Hub
@@ -46,6 +48,8 @@ The analysis needs only CPU and standard scientific Python:
 ```bash
 pip install -r requirements.txt
 ```
+
+To re-run the measurements on NVIDIA, Intel or AMD GPUs, see [SETUP.md](SETUP.md).
 
 To profile new models, use an environment with vLLM 0.16 and Zeus. `requirements-profiler-nvidia.txt`
 pins the exact versions we used. On Intel GPUs, apply `intel/vllm_xpu_patches.diff` to vLLM.
@@ -64,7 +68,8 @@ runs offline:
 | `nvidia/results_vidur/` | Vidur's simulated batch latency for the Llama-3.1-8B and Llama-3.1-70B grids |
 | `nvidia/results_zeus_trace/` | Real Azure request batches (held-out evaluation) |
 | `nvidia/results_zeus_online/`, `nvidia/results_zeus_online_day/` | Live replay of Azure traffic against every layout (60 s pilot and one-day replay) |
-| `intel/results_aurora/` | Intel GPU Max 1550 grids (one rank per tile) |
+| `nvidia/results_amd/` | AMD Instinct MI100 grids (Mistral-7B, Llama-3.1-8B; TP 1 and 2) |
+| `intel/results_intel/` | Intel GPU Max 1550 grids (one rank per tile) |
 
 Each `profiling_metrics.csv` has one row per measured batch:
 
@@ -100,7 +105,8 @@ Run the scripts from `nvidia/` unless noted otherwise. Outputs go to `nvidia/res
 | Real Azure request batches | `python test/trace_eval.py --grid <grid csv> --trace <trace csv>`, `python test/plot_trace.py` |
 | Distribution shift and cross-model transfer | `python test/shift_transfer.py` |
 | Day-long live replay: layout selection policies | `python test/online_eval.py --online results_zeus_online_day/run_online_<model>_fp16 ...`, then `python test/policy_eval.py results_figures/online_run_online_*` |
-| Intel GPU Max 1550 (accuracy, card correction, comparison with A100) | `python test/aurora_eval.py`, `python viz/aurora.py` |
+| Intel GPU Max 1550 (accuracy, card correction, comparison with A100) | `python test/intel_eval.py`, `python viz/intel.py` |
+| AMD Instinct MI100 (accuracy, TP cost, transfer from A100) | `python test/amd_eval.py`, `python viz/amd.py` |
 | Quantized checkpoints | `python viz/quantized.py`; choosing checkpoint and layout under an MMLU limit: `python test/quant_selection.py` |
 | MaverIQ reimplementation check | `python test/maveriq_reproduction.py` |
 | Characterization figures (TP/PP, power, Pareto) | `python viz/characterization.py` |

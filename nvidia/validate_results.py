@@ -15,11 +15,14 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TDP_W = {"A100": 400.0,           # A100-SXM4-40GB
+         "MI100": 300.0,          # AMD Instinct MI100 (290 W limit)
          "Max1550": 600.0}        # Intel Data Center GPU Max 1550, per card (two tiles)
-# Aurora: vLLM puts one rank per tile and the Level Zero counter reads whole cards
-TILES_PER_CARD = {"A100": 1, "Max1550": 2}
-SOURCES = {"A100": ("zeus_sampling",), "Max1550": ("ze_counter_poll", "ze_counter_card")}
+# Intel GPU: vLLM puts one rank per tile and the Level Zero counter reads whole cards
+TILES_PER_CARD = {"A100": 1, "Max1550": 2, "MI100": 1}
+SOURCES = {"A100": ("zeus_sampling",), "Max1550": ("ze_counter_poll", "ze_counter_card"),
+           "MI100": ("amdsmi_sampling",)}
 MIN_W = 40.0                     # below an A100's idle draw: a measurement error
+MIN_W_GPU = {"MI100": 25.0}     # MI100 idles at ~34 W
 MISMATCH = 0.25
 OUTLIER_Z = 4.0
 SHORT_S = 0.5
@@ -37,8 +40,9 @@ def load(path):
 
 def row_checks(d, gpu=None):
     if gpu is None:     # Intel runs record a Level Zero power source
-        intel = "power_source" in d and d.power_source.astype(str).str.startswith("ze_counter").any()
-        gpu = "Max1550" if intel else "A100"
+        ps = d.power_source.astype(str) if "power_source" in d else pd.Series([], dtype=str)
+        gpu = ("MI100" if ps.str.startswith("amdsmi").any()
+               else "Max1550" if ps.str.startswith("ze_counter").any() else "A100")
     n = len(d)
     err, warn = {}, {}
     missing = d[["latency", "power", "energy"]].isna().any(axis=1)
@@ -51,7 +55,7 @@ def row_checks(d, gpu=None):
     if "power_source" in d:
         err["power_source"] = ok & ~d.power_source.astype(str).isin(SOURCES[gpu])
     per_gpu = d.power / g
-    err["power_range"] = ok & ((per_gpu < MIN_W) | (per_gpu > TDP_W[gpu] * 1.1))
+    err["power_range"] = ok & ((per_gpu < MIN_W_GPU.get(gpu, MIN_W)) | (per_gpu > TDP_W[gpu] * 1.1))
     ratio = d.energy * d.batch_size / (d.power * d.latency)
     err["energy_power_mismatch"] = ok & (d.energy > 0) & ((ratio - 1).abs() > MISMATCH)
     tok = pd.Series(False, index=d.index)

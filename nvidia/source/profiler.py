@@ -3,11 +3,14 @@ import time
 
 try:
     import pynvml
-except Exception:  # no NVIDIA driver bindings (e.g. Intel GPUs on Aurora)
+except Exception:  # no NVIDIA driver bindings (e.g. Intel GPUs)
     pynvml = None
 
 from .energy_intel import (xpu_available, xpu_device_count, get_level_zero,
                            IntelEnergyMonitor, IntelPowerPoller)
+
+from .energy_amd import (amd_available, get_amdsmi,
+                         AMDEnergyMonitor, AMDPowerPoller)
 
 try:
     from zeus.monitor import ZeusMonitor
@@ -100,7 +103,7 @@ def _step_mean(samples, t0, t1):
     return total / span
 
 
-# Intel GPUs (Aurora): Zeus has no Intel backend, so energy comes from the Level
+# Intel GPUs: Zeus has no Intel backend, so energy comes from the Level
 # Zero Sysman energy counters instead (source/energy_intel.py), through the same
 # begin_window/end_window interface. Decided once per process.
 _INTEL = None
@@ -121,7 +124,40 @@ def _intel_poller():
     return _INTEL_POLLER
 
 
+# AMD Instinct (MI100): amdsmi hardware energy accumulator, same window interface
+# (source/energy_amd.py). Zeus's AMD backend needs a newer amdsmi and polls power.
+_AMD = None
+_AMD_POLLER = None
+
+
+def _amd():
+    global _AMD
+    if _AMD is None:
+        _AMD = (get_amdsmi() or False) if amd_available() else False
+    return _AMD or None
+
+
+def _amd_poller():
+    global _AMD_POLLER
+    if _AMD_POLLER is None and _amd() is not None:
+        _AMD_POLLER = AMDPowerPoller(_amd())
+    return _AMD_POLLER
+
+
 def _get_monitor(gpu_indices, sync_with):
+    sm = _amd()
+    if sm is not None:
+        key = ("amd", tuple(gpu_indices) if gpu_indices is not None else None)
+        if key not in _MONITORS:
+            idx = list(gpu_indices) if gpu_indices is not None else list(range(len(sm.visible)))
+            try:
+                sm.read_energy(idx[0])   # fail now, not mid-run
+                _MONITORS[key] = AMDEnergyMonitor(sm, idx)
+                _amd_poller()
+            except Exception as e:
+                print(f"[Profiler] amdsmi monitor unavailable for devices {idx} ({e})")
+                _MONITORS[key] = None
+        return _MONITORS[key]
     ze = _intel()
     if ze is not None:
         key = ("intel", tuple(gpu_indices) if gpu_indices is not None else None)
@@ -153,6 +189,38 @@ def _get_monitor(gpu_indices, sync_with):
                   f"falling back to NVML power sampling on device 0.")
             _MONITORS[key] = None
     return _MONITORS[key]
+
+
+# Consecutive AMD windows whose per-GPU counter energy disagrees with sampled
+# power x time by more than COUNTER_TOL before the run is stopped. One bad window
+# is a glitch the validator drops; a run of them means the counter has stalled.
+COUNTER_TOL = 0.35
+COUNTER_MAX_BAD = 5
+COUNTER_MIN_S = 1.0
+_counter_bad = 0
+
+
+def _check_amd_counter(per_gpu, monitor, t0, t1, latency):
+    global _counter_bad
+    if latency < COUNTER_MIN_S:
+        return
+    poller = _amd_poller()
+    bad = False
+    for i in monitor.gpu_indices:
+        p = _step_mean(poller.timeline(i), t0, t1)
+        if not p:
+            continue
+        r = per_gpu.get(i, 0.0) / (p * latency)
+        if abs(r - 1) > COUNTER_TOL:
+            bad = True
+            print(f"[Profiler] GPU {i}: counter {per_gpu.get(i, 0.0):.1f} J vs "
+                  f"power x time {p * latency:.1f} J (ratio {r:.2f})", flush=True)
+    _counter_bad = _counter_bad + 1 if bad else 0
+    if _counter_bad >= COUNTER_MAX_BAD:
+        from .gpu_guard import EnergyCounterError
+        raise EnergyCounterError(
+            f"energy counter disagrees with sampled power on {_counter_bad} windows "
+            f"in a row; reboot the node, check test_amd_energy.py, then resume")
 
 
 class Profiler:
@@ -227,6 +295,12 @@ class Profiler:
         if self.monitor is None:
             print("[Profiler] energy source: NVML power sampling (device 0 only)")
             return
+        if isinstance(self.monitor, AMDEnergyMonitor):
+            print(f"[Profiler] energy source: amdsmi energy counter, GPUs "
+                  f"{self.monitor.gpu_indices}\n"
+                  f"[Profiler] power source:  amdsmi socket power sensor polled every "
+                  f"{_amd_poller().period_s}s, summed over GPUs {self.monitor.gpu_indices}")
+            return
         if isinstance(self.monitor, IntelEnergyMonitor):
             print(f"[Profiler] energy source: Level Zero energy counters, devices "
                   f"{self.monitor.gpu_indices} -> domains "
@@ -248,7 +322,7 @@ class Profiler:
               f"[Profiler] power source:  {power}, summed over GPUs {idx}")
 
     def _ensure_handle(self):
-        if pynvml is None or _intel() is not None:
+        if pynvml is None or _intel() is not None or _amd() is not None:
             return
         if self.handle is None:
             try:
@@ -271,6 +345,16 @@ class Profiler:
         Returns (watts, n_samples), or (None, 0) when the poller has nothing to
         say about the window — the caller then falls back to two-point sampling.
         """
+        if isinstance(self.monitor, AMDEnergyMonitor):
+            poller = _amd_poller()
+            total, n = 0.0, 0
+            for i in self.monitor.gpu_indices:
+                samples = poller.timeline(i)
+                mean = _step_mean(samples, t0, t1)
+                if mean is not None:
+                    total += mean
+                    n += len(samples)
+            return (total, n) if n else (None, 0)
         if isinstance(self.monitor, IntelEnergyMonitor):
             poller = _intel_poller()
             total, n = 0.0, 0
@@ -379,10 +463,12 @@ class Profiler:
         latency = t1 - t0
 
         intel = isinstance(self.monitor, IntelEnergyMonitor)
+        amd = isinstance(self.monitor, AMDEnergyMonitor)
         sampled_power, n_power = self._window_power(t0, t1)
         if sampled_power is not None:
             avg_power = sampled_power
-            power_source = "ze_counter_poll" if intel else "zeus_sampling"
+            power_source = ("ze_counter_poll" if intel else "amdsmi_sampling"
+                            if amd else "zeus_sampling")
         else:
             # Device 0 only, and biased low because power_before is read while
             # the GPU is idle. Kept so a run never loses the column outright.
@@ -394,13 +480,17 @@ class Profiler:
             energy = float(measurement.total_energy)
             # Zeus times the same window; prefer it over the Python-side clock.
             latency = float(measurement.time) or latency
-            source = f"ze_counter_{self.monitor.scope}" if intel else "nvml_counter"
+            source = (f"ze_counter_{self.monitor.scope}" if intel else
+                      "amdsmi_counter" if amd else "nvml_counter")
         else:
             # avg_power already covers every GPU the engine uses, so this stays
             # on the same footing as the counter path it stands in for.
             per_gpu = {0: avg_power * latency}
             energy = avg_power * latency
             source = "nvml_power_sampling"
+
+        if amd and measurement is not None and sampled_power is not None:
+            _check_amd_counter(per_gpu, self.monitor, t0, t1, latency)
 
         metrics = {
             "total_latency": latency,

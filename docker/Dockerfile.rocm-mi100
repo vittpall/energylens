@@ -1,0 +1,20 @@
+# Build environment for the AMD Instinct MI100 (gfx908) runs: ROCm + PyTorch, amdsmi, and the
+# tools that nvidia/amd_setup/build_vllm_mi100.sh needs to compile vLLM 0.6.3.
+#
+#   docker build -f docker/Dockerfile.rocm-mi100 -t energylens-rocm .
+#
+# BASE_IMAGE must be a ROCm PyTorch image with ROCm >= 6.0, PyTorch 2.x and Python 3.10+, on which
+# vLLM 0.6.3 builds (the official rocm/pytorch images do). Pin the tag you used when you publish
+# results; the paper's runs used ROCm 6.1 with PyTorch 2.4.0.
+ARG BASE_IMAGE=rocm/pytorch:latest
+FROM ${BASE_IMAGE}
+
+# amdsmi: the Python bindings ship with ROCm and are not on PyPI.
+RUN pip install --no-cache-dir /opt/rocm/share/amd_smi 2>/dev/null \
+    || pip install --no-cache-dir /opt/rocm/libexec/amdsmi_cli/../../share/amd_smi
+
+RUN pip install --no-cache-dir "numpy<2" pandas scipy scikit-learn matplotlib pyarrow datasets \
+    setuptools-scm jinja2 ninja cmake
+
+ENV ENERGYLENS_BACKEND=amd NCCL_P2P_DISABLE=1 PYTHONPATH=/work/build/vllm
+WORKDIR /work

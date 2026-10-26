@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Figures for the Aurora (Intel Data Center GPU Max 1550) runs.
+"""Figures for the Intel GPU (Intel Data Center GPU Max 1550) runs.
 
-    python viz/aurora.py [--out results_figures/aurora]
+    python viz/intel.py [--out results_figures/intel]
 """
 import argparse
 import os
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.join(NVIDIA, "test"))
 sys.path.insert(0, os.path.join(NVIDIA, "..", "adaptive_sampling"))
 from style import plt, save  # noqa: E402
 from datasets import C  # noqa: E402
-from aurora_eval import RUNS, load, TDP  # noqa: E402
+from intel_eval import RUNS, load, TDP  # noqa: E402
 
 COLOR = {"Mistral-7B": C["Mistral-7B"], "Llama-3.1-8B": C["Llama-3.1-8B"], "Qwen2.5-14B": C["Qwen2.5-14B"],
          "Qwen2-VL-7B (image)": C["Qwen2-VL-7B"], "Qwen1.5-MoE-A2.7B": C["Qwen1.5-MoE"]}
@@ -59,8 +59,8 @@ def characterization(out):
     a.set_yscale("log")
     b.set_yscale("log")
     a.legend(fontsize=10)
-    # (d) Aurora / A100 energy per generated token, median over the grid cells both machines measured
-    # (per token: the image prompts stop at EOS, and Aurora's answers are longer than the A100's)
+    # (d) Intel GPU / A100 energy per generated token, median over the grid cells both machines measured
+    # (per token: the image prompts stop at EOS, and the Intel node's answers are longer than the A100's)
     k = ["tensor_parallel_size", "pipeline_parallel_size", "max_tokens", "batch_size", "max_num_batched_tokens",
          "input_length"]
 
@@ -82,21 +82,21 @@ def characterization(out):
     e.axhline(1, color="black", lw=1)
     e.set_xticks(range(len(shared)), [f"({t},{p})" for t, p in shared])
     e.set_xlabel("(TP, PP)")
-    e.set_ylabel("Energy per output token, Aurora / A100")
-    e.set_title("(d) Aurora / A100, same layout and workload")
+    e.set_ylabel("Energy per output token, Intel GPU / A100")
+    e.set_title("(d) Intel GPU / A100, same layout and workload")
     fig.tight_layout()
     fig._laid_out = True
-    save(fig, out, "aurora_characterization")
+    save(fig, out, "intel_characterization")
     res = pd.concat([pd.concat([g.assign(dataset=n, gpu="Max 1550") for n, g in data.items()]),
                      pd.concat([g.assign(dataset=n, gpu="A100") for n, g in a100.items()])])
-    res.to_csv(os.path.join(out, "aurora_per_layout.csv"), index=False)
-    pd.DataFrame(rows).to_csv(os.path.join(out, "aurora_vs_a100.csv"), index=False)
+    res.to_csv(os.path.join(out, "intel_per_layout.csv"), index=False)
+    pd.DataFrame(rows).to_csv(os.path.join(out, "intel_vs_a100.csv"), index=False)
     return res
 
 
 def side_by_side(out):
     """Same model on both machines: latency, energy per output token and power per layout, each
-    averaged over the workload cells the A100 grid measured (the Aurora grid contains it)."""
+    averaged over the workload cells the A100 grid measured (the Intel GPU grid contains it)."""
     k = ["max_tokens", "batch_size", "max_num_batched_tokens", "input_length"]
     fig, axs = plt.subplots(len(RUNS), 3, figsize=(16, 3.6 * len(RUNS)), squeeze=False)
     rows = []
@@ -133,9 +133,9 @@ def side_by_side(out):
     axs[0][0].legend(fontsize=10)
     fig.tight_layout()
     fig._laid_out = True
-    save(fig, out, "aurora_vs_a100_models")
+    save(fig, out, "intel_vs_a100_models")
     res = pd.DataFrame(rows)
-    res.to_csv(os.path.join(out, "aurora_vs_a100_models.csv"), index=False)
+    res.to_csv(os.path.join(out, "intel_vs_a100_models.csv"), index=False)
     return res
 
 
@@ -150,7 +150,7 @@ def pair_figure(out, models=PAIR_MODELS):
     workload cells."""
     from matplotlib.lines import Line2D
     from matplotlib.ticker import FixedLocator, NullLocator, ScalarFormatter
-    d = pd.read_csv(os.path.join(out, "aurora_vs_a100_models.csv"))
+    d = pd.read_csv(os.path.join(out, "intel_vs_a100_models.csv"))
     d = d[d.dataset.isin(models)]
     lays = sorted({(int(t), int(p)) for t, p in zip(d.tensor_parallel_size, d.pipeline_parallel_size)},
                   key=lambda l: (l[0] * l[1], l[1]))
@@ -201,7 +201,7 @@ def pair_figure(out, models=PAIR_MODELS):
     fig.legend(handles=h, loc="upper center", ncol=5, frameon=False, fontsize=11, bbox_to_anchor=(0.5, 1.02))
     fig.tight_layout(rect=(0, 0, 1, 0.92))
     fig._laid_out = True
-    save(fig, out, "aurora_vs_a100")
+    save(fig, out, "intel_vs_a100")
 
 
 def _binned_power(d, tp, pp, bins):
@@ -295,7 +295,7 @@ def accuracy(out):
         a.bar(np.arange(len(names)) + (i - 1) * w, m.loc[names, meth], w, color=METHOD_COLOR[meth], label=meth)
     a.set_xticks(range(len(names)), [n.replace(" (image)", "\n(image)") for n in names])
     a.set_ylabel("MAPE (%)")
-    a.set_title("(a) 50-row fits on Aurora, held-out scenarios")
+    a.set_title("(a) 50-row fits on Intel GPUs, held-out scenarios")
     a.legend(fontsize=10)
     lo = pd.read_csv(os.path.join(out, "loco.csv")).pivot_table(index="dataset", columns="method", values="pairwise")
     for i, meth in enumerate(["EnergyLens", "MaverIQ", "Gradient Boosting"]):
@@ -313,19 +313,19 @@ def accuracy(out):
         c.plot(s.index, s.values, color=col, marker=mk, ls=ls, ms=8, mec="white", lw=1.6, label=meth)
     c.axhline(t["A100 fit, as is"].dropna().iloc[0], color="black", ls="--", lw=1, label="A100 fit, as is")
     c.set_yscale("log")
-    c.set_xlabel("Aurora rows used (k)")
+    c.set_xlabel("Intel GPU rows used (k)")
     c.set_ylabel("MAPE (%)")
-    c.set_title("(c) Transfer of the A100 fit to Aurora")
+    c.set_title("(c) Transfer of the A100 fit to Intel GPU")
     c.legend(fontsize=9.5)
     fig.tight_layout()
     fig._laid_out = True
-    save(fig, out, "aurora_accuracy")
+    save(fig, out, "intel_accuracy")
     return t
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--out", default=os.path.join(NVIDIA, "results_figures", "aurora"))
+    ap.add_argument("--out", default=os.path.join(NVIDIA, "results_figures", "intel"))
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 

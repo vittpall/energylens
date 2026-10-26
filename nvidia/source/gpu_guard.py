@@ -9,8 +9,20 @@ except ImportError:          # no NVIDIA stack (e.g. AMD node): guard disabled
     pynvml = None
 
 
+try:
+    import amdsmi
+except ImportError:
+    amdsmi = None
+
+
 class GPUContentionError(RuntimeError):
     """Another job's process is running on one of this job's GPUs."""
+
+
+class EnergyCounterError(GPUContentionError):
+    """The GPU energy counter stopped tracking sampled power (AMD MI100: the
+    accumulator froze or skipped after hours of profiling until a reboot).
+    Handled like contention: stop, drop the config's partial rows, resume later."""
 
 
 _JOB = os.environ.get("PBS_JOBID")
@@ -27,6 +39,27 @@ def _nvml_ready():
         except Exception:
             _nvml_ok = False
     return _nvml_ok
+
+
+_amd_ok = None
+
+
+def _amd_ready():
+    """amdsmi usable and no NVIDIA stack: this is an AMD node."""
+    global _amd_ok
+    if _amd_ok is None:
+        _amd_ok = False
+        if amdsmi is not None and not _nvml_ready_quiet():
+            try:
+                amdsmi.amdsmi_init()
+                _amd_ok = bool(amdsmi.amdsmi_get_processor_handles())
+            except Exception:
+                pass
+    return _amd_ok
+
+
+def _nvml_ready_quiet():
+    return pynvml is not None and _nvml_ready()
 
 
 def _proc_jobid(pid):
@@ -87,10 +120,25 @@ def foreign_gpu_processes():
     [(pid, gpu_index, gpu_uuid, used_MiB), ...] for processes on this job's
     GPUs that are not ours, or None if NVML is unavailable.
     """
-    if pynvml is None or not _nvml_ready():
-        return None
     mine = _descendants(os.getpid())
     found = []
+    if _amd_ready():
+        for i, h in enumerate(amdsmi.amdsmi_get_processor_handles()):
+            try:
+                procs = amdsmi.amdsmi_get_gpu_process_list(h)
+            except Exception:
+                continue
+            for p in procs:
+                pid = p.get("pid") if isinstance(p, dict) else getattr(p, "pid", None)
+                if pid is None or pid in mine:
+                    continue
+                if _JOB and _proc_jobid(pid) == _JOB:
+                    continue
+                used = (p.get("mem", 0) if isinstance(p, dict) else 0) / 2**20
+                found.append((pid, i, f"amd-gpu-{i}", round(used)))
+        return found
+    if pynvml is None or not _nvml_ready():
+        return None
     for i in range(pynvml.nvmlDeviceGetCount()):
         h = pynvml.nvmlDeviceGetHandleByIndex(i)
         uuid = pynvml.nvmlDeviceGetUUID(h)

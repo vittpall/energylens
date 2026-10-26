@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""EnergyLens on Intel Data Center GPU Max 1550 (Aurora), against the A100 results.
+"""EnergyLens on Intel Data Center GPU Max 1550, against the A100 results.
 
-    python test/aurora_eval.py
+    python test/intel_eval.py
 """
 import os
 import sys
@@ -19,11 +19,11 @@ from compare_cross_model import fit_unified, unified_predict, holdout_scenarios 
 from simulator import load_csv, ranking_metrics  # noqa: E402
 from shift_transfer import fit_all as _fit_all, score, mape, fit_scale, fit_prior, gb_fit  # noqa: E402
 
-OUT = os.path.join(NVIDIA, "results_figures", "aurora")
-A = "../intel/results_aurora/run_{}/res_native/profiling_metrics.csv"
+OUT = os.path.join(NVIDIA, "results_figures", "intel")
+A = "../intel/results_intel/run_{}/res_native/profiling_metrics.csv"
 Z = "results_zeus/run_{}/res_native/profiling_metrics.csv"
 ZM = "results_zeus_maxgen/run_{}/res_native/profiling_metrics.csv"
-# short name -> (Aurora CSV, A100 CSV)
+# short name -> (Intel GPU CSV, A100 CSV)
 RUNS = {
     "Mistral-7B": (A.format("text_only_Mistral-7B-Instruct-v0.3_fp16"), Z.format("text_only_Mistral-7B-Instruct-v0.3_fp16")),
     "Llama-3.1-8B": (A.format("text_only_Llama-3.1-8B-Instruct_fp16"), Z.format("text_only_Llama-3.1-8B-Instruct_fp16")),
@@ -176,7 +176,7 @@ def main():
     tr, th = transfer(data, a100)
     tr.to_csv(os.path.join(OUT, "transfer.csv"), index=False)
     th.to_csv(os.path.join(OUT, "theta.csv"), index=False)
-    print("\n== A100 -> Aurora transfer: MAPE / pairwise / regret (mean over datasets and seeds)")
+    print("\n== A100 -> Intel GPU transfer: MAPE / pairwise / regret (mean over datasets and seeds)")
     for v in ("mape", "pairwise", "regret"):
         print(tr.pivot_table(index="method", columns="k", values=v).round(2).to_string())
     print("\n== fitted exponents")

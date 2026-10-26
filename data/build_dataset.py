@@ -79,7 +79,7 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     sets = {
         "grid": [*runs("nvidia/results_zeus/**/profiling_metrics.csv", "NVIDIA A100-40GB", "Zeus (NVML)"),
-                 *runs("intel/results_aurora/**/profiling_metrics.csv", "Intel GPU Max 1550",
+                 *runs("intel/results_intel/**/profiling_metrics.csv", "Intel GPU Max 1550",
                        "Level Zero Sysman")],
         "online_day": [*runs("nvidia/results_zeus_online_day/*/profiling_metrics.csv", "NVIDIA A100-40GB",
                              "Zeus (NVML)")],
